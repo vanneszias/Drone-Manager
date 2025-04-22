@@ -23,7 +23,7 @@ export default function Hero() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button size="lg" className="gap-2"
                 onClick={() => {
-                  router.push("/home")
+                  router.push("/dashboard")
                 }}
                 >
                   Get Started <ArrowRight className="h-4 w-4" />
