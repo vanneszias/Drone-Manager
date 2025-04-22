@@ -247,110 +247,158 @@ def delete_verslag(verslag_id):
 # --- Drone Routes ---
 @app.route('/api/drones', methods=['GET'])
 def get_drones():
-    drones = DroneHelper.get_all_drones()
-    return jsonify(drones)
+    app.logger.info("Received GET /api/drones request") # Use Flask logger
+    try:
+        drones = DroneHelper.get_all_drones()
+        app.logger.debug(f"Fetched drones data: {drones}")
+        return jsonify(drones)
+    except Exception as e:
+        app.logger.error(f"Error in get_drones: {e}\n{traceback.format_exc()}") # Log full traceback
+        return jsonify({"error": f"Failed to fetch drones: {str(e)}"}), 500
 
 @app.route('/api/drones/<int:drone_id>', methods=['GET'])
 def get_drone(drone_id):
-    drone = DroneHelper.get_drone_by_id(drone_id)
-    if drone:
-        return jsonify(drone)
-    return jsonify({"error": "Drone not found"}), 404
+    app.logger.info(f"Received GET /api/drones/{drone_id} request")
+    try:
+        drone = DroneHelper.get_drone_by_id(drone_id)
+        if drone:
+            app.logger.debug(f"Found drone {drone_id}: {drone}")
+            return jsonify(drone)
+        else:
+            app.logger.warning(f"Drone with ID {drone_id} not found")
+            return jsonify({"error": "Drone not found"}), 404
+    except Exception as e:
+        app.logger.error(f"Error in get_drone({drone_id}): {e}\n{traceback.format_exc()}")
+        return jsonify({"error": f"Failed to fetch drone {drone_id}: {str(e)}"}), 500
+
 
 @app.route('/api/drones', methods=['POST'])
 def create_drone():
+    app.logger.info("Received POST /api/drones request")
     data = request.get_json()
+    app.logger.debug(f"Received data: {data}")
+
+    if not data:
+        app.logger.warning("No input data provided for POST /api/drones")
+        return jsonify({"error": "No input data provided"}), 400
+
+    # --- FIX: Validate keys SENT BY THE DIALOG ---
+    required_keys = ['status', 'batterij', 'magOpstijgen']
+    missing_keys = [key for key in required_keys if key not in data]
+    if missing_keys:
+        error_msg = f"Missing required fields: {', '.join(missing_keys)}"
+        app.logger.warning(f"Bad request for POST /api/drones: {error_msg}")
+        return jsonify({"error": error_msg}), 400
+
     try:
-        drone = DroneHelper.create_drone(
-            naam=data['naam'],
-            model=data['model'],
-            status=data['status'],
-            battery_level=data.get('battery_level')
+        # Validate battery level
+        batterij_val = data['batterij']
+        if not isinstance(batterij_val, (int, float)): # Allow float temporarily if needed, but DB expects int
+             raise ValueError("Battery level must be a number.")
+        batterij = int(batterij_val)
+        if not (0 <= batterij <= 100):
+             raise ValueError("Battery level must be between 0 and 100.")
+
+        # Validate status
+        valid_statuses = ['AVAILABLE', 'IN_USE', 'MAINTENANCE', 'OFFLINE']
+        status_val = data['status']
+        if status_val not in valid_statuses:
+             raise ValueError(f"Invalid status '{status_val}'. Must be one of: {', '.join(valid_statuses)}")
+
+        # Validate magOpstijgen (should be boolean)
+        mag_opstijgen_val = data['magOpstijgen']
+        if not isinstance(mag_opstijgen_val, bool):
+            # Handle potential string 'true'/'false' if necessary, but boolean is better
+             raise ValueError("magOpstijgen must be a boolean (true/false).")
+
+        # --- FIX: Call the HELPER with the arguments IT expects ---
+        # DroneHelper.create_drone expects: status, batterij, mag_opstijgen
+        new_drone = DroneHelper.create_drone(
+            status=status_val,
+            batterij=batterij,
+            mag_opstijgen=mag_opstijgen_val
         )
-        return jsonify(drone), 201
+
+        if new_drone:
+            app.logger.info(f"Successfully created drone: {new_drone}")
+            return jsonify(new_drone), 201
+        else:
+            app.logger.error("DroneHelper.create_drone returned None")
+            return jsonify({"error": "Failed to create drone in database (helper returned None)"}), 500
+
+    except ValueError as ve: # Catch specific validation errors
+        error_msg = str(ve)
+        app.logger.warning(f"Validation error for POST /api/drones: {error_msg}")
+        return jsonify({"error": error_msg}), 400
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        app.logger.error(f"Error in create_drone: {e}\n{traceback.format_exc()}")
+        return jsonify({"error": "An internal server error occurred while creating the drone"}), 500
+
 
 @app.route('/api/drones/<int:drone_id>', methods=['PUT'])
 def update_drone(drone_id):
+    app.logger.info(f"Received PUT /api/drones/{drone_id} request")
     data = request.get_json()
+    app.logger.debug(f"Received data for update: {data}")
+
+    if not data:
+        app.logger.warning(f"No input data provided for PUT /api/drones/{drone_id}")
+        return jsonify({"error": "No input data provided"}), 400
+
+    # Prepare update_data based on what helper expects (kwargs)
+    update_data = {}
+    if 'status' in data:
+        valid_statuses = ['AVAILABLE', 'IN_USE', 'MAINTENANCE', 'OFFLINE']
+        if data['status'] not in valid_statuses:
+             return jsonify({"error": f"Invalid status '{data['status']}'"}), 400
+        update_data['status'] = data['status']
+    if 'batterij' in data:
+        try:
+            batterij = int(data['batterij'])
+            if not (0 <= batterij <= 100):
+                return jsonify({"error": "Battery level must be between 0 and 100"}), 400
+            update_data['batterij'] = batterij
+        except ValueError:
+            return jsonify({"error": "Invalid battery level."}), 400
+    if 'magOpstijgen' in data:
+        if not isinstance(data['magOpstijgen'], bool):
+             return jsonify({"error": "magOpstijgen must be boolean."}), 400
+        update_data['magOpstijgen'] = data['magOpstijgen']
+
+    if not update_data:
+         return jsonify({"error": "No valid fields provided for update"}), 400
+
     try:
-        drone = DroneHelper.update_drone(
-            drone_id=drone_id,
-            naam=data.get('naam'),
-            model=data.get('model'),
-            status=data.get('status'),
-            battery_level=data.get('battery_level')
-        )
-        if drone:
-            return jsonify(drone)
-        return jsonify({"error": "Drone not found"}), 404
+        updated_drone = DroneHelper.update_drone(drone_id, **update_data)
+        if updated_drone:
+            app.logger.info(f"Successfully updated drone {drone_id}: {updated_drone}")
+            return jsonify(updated_drone)
+        else:
+            app.logger.warning(f"Drone {drone_id} not found for update or update failed.")
+            # Check if drone exists first? Helper might handle this.
+            return jsonify({"error": "Drone not found or update failed"}), 404 # Or 500?
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        app.logger.error(f"Error in update_drone({drone_id}): {e}\n{traceback.format_exc()}")
+        return jsonify({"error": "An internal server error occurred while updating the drone"}), 500
 
 @app.route('/api/drones/<int:drone_id>', methods=['DELETE'])
 def delete_drone(drone_id):
-    success = DroneHelper.delete_drone(drone_id)
-    if success:
-        return jsonify({"message": "Drone deleted successfully"}), 200
-    return jsonify({"error": "Drone not found"}), 404
-
-# --- Docking Station Routes ---
-@app.route('/api/docking-stations', methods=['GET'])
-def get_docking_stations():
-    event_id = request.args.get('event_id')
-    if event_id:
-        docking_stations = DockingHelper.get_docking_stations_by_event(int(event_id))
-    else:
-        docking_stations = DockingHelper.get_all_docking_stations()
-    return jsonify(docking_stations)
-
-@app.route('/api/docking-stations/<int:docking_id>', methods=['GET'])
-def get_docking_station(docking_id):
-    docking_station = DockingHelper.get_docking_station_by_id(docking_id)
-    if docking_station:
-        return jsonify(docking_station)
-    return jsonify({"error": "Docking station not found"}), 404
-
-@app.route('/api/docking-stations', methods=['POST'])
-def create_docking_station():
-    data = request.get_json()
+    app.logger.info(f"Received DELETE /api/drones/{drone_id} request")
     try:
-        docking_station = DockingHelper.create_docking_station(
-            evenement_id=data['evenement_id'],
-            naam=data['naam'],
-            beschrijving=data.get('beschrijving', ''),
-            locatie=data['locatie'],
-            capaciteit=data['capaciteit']
-        )
-        return jsonify(docking_station), 201
+        success = DroneHelper.delete_drone(drone_id)
+        if success:
+            app.logger.info(f"Successfully deleted drone {drone_id}")
+            # Return 204 No Content on successful deletion is common
+            return '', 204
+            # Or return a message:
+            # return jsonify({"message": "Drone deleted successfully"}), 200
+        else:
+            # This might happen if the drone didn't exist
+            app.logger.warning(f"Drone {drone_id} not found for deletion.")
+            return jsonify({"error": "Drone not found"}), 404
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
-@app.route('/api/docking-stations/<int:docking_id>', methods=['PUT'])
-def update_docking_station(docking_id):
-    data = request.get_json()
-    try:
-        docking_station = DockingHelper.update_docking_station(
-            docking_id=docking_id,
-            evenement_id=data.get('evenement_id'),
-            naam=data.get('naam'),
-            beschrijving=data.get('beschrijving'),
-            locatie=data.get('locatie'),
-            capaciteit=data.get('capaciteit')
-        )
-        if docking_station:
-            return jsonify(docking_station)
-        return jsonify({"error": "Docking station not found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
-@app.route('/api/docking-stations/<int:docking_id>', methods=['DELETE'])
-def delete_docking_station(docking_id):
-    success = DockingHelper.delete_docking_station(docking_id)
-    if success:
-        return jsonify({"message": "Docking station deleted successfully"}), 200
-    return jsonify({"error": "Docking station not found"}), 404
+        app.logger.error(f"Error in delete_drone({drone_id}): {e}\n{traceback.format_exc()}")
+        return jsonify({"error": "An internal server error occurred while deleting the drone"}), 500
 
 # --- Cyclus Routes ---
 @app.route('/api/cycli', methods=['GET'])
@@ -652,6 +700,6 @@ def get_cyclus_overview(cyclus_id):
 
 # Run the application
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5328))
     debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     app.run(host='0.0.0.0', port=port, debug=debug)
