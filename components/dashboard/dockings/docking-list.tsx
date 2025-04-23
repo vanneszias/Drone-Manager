@@ -13,10 +13,12 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge"; // Import Badge
 import useDockings from "@/hooks/useDockings";
 
 interface DockingListProps {
   dockings: Docking[];
+
 }
 
 export default function DockingList({ dockings }: DockingListProps) {
@@ -29,8 +31,8 @@ export default function DockingList({ dockings }: DockingListProps) {
       <TableHeader>
         <TableRow>
           <TableHead>ID</TableHead>
-          <TableHead>Name</TableHead>
           <TableHead>Location</TableHead>
+          <TableHead>Available</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -38,8 +40,15 @@ export default function DockingList({ dockings }: DockingListProps) {
         {dockings.map((docking) => (
           <TableRow key={docking.id}>
             <TableCell>{docking.id}</TableCell>
-            <TableCell>{docking.naam}</TableCell>
             <TableCell>{docking.locatie}</TableCell>
+            <TableCell>
+              <Badge
+                variant={docking.isbeschikbaar ? "default" : "secondary"}
+                className={docking.isbeschikbaar ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
+              >
+                {docking.isbeschikbaar ? 'Yes' : 'No'}
+              </Badge>
+            </TableCell>
             <TableCell className="text-right">
               <Button variant="ghost" size="icon" disabled>
                 <Edit className="h-4 w-4" />
@@ -57,7 +66,7 @@ export default function DockingList({ dockings }: DockingListProps) {
       </TableBody>
       <TableFooter>
         <TableRow>
-          <TableCell colSpan={3}>Total Dockings</TableCell>
+          <TableCell colSpan={3}>Total Dockings</TableCell> {/* Adjust colSpan */}
           <TableCell className="text-right">{dockings.length}</TableCell>
         </TableRow>
       </TableFooter>
