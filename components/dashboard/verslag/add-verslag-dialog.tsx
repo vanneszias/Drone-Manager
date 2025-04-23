@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { Verslag } from "@/app/types";
 import { PlusCircle } from "lucide-react";
 
+import useVerslag from "@/hooks/useVerslag";
+
 export function AddVerslagDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<Verslag>>({
@@ -29,30 +31,23 @@ export function AddVerslagDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
 
-    try {
-      const response = await fetch('/api/verslagen', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to add verslag');
-      }
-
-      setIsOpen(false);
-      window.location.reload();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to add verslag');
-    } finally {
-      setIsLoading(false);
-    }
+    const verslagData: Verslag = {
+      id: 0,
+      onderwerp: formData.onderwerp || '',
+      beschrijving: formData.beschrijving || '',
+      isverzonden: formData.isverzonden || false,
+      droneId: formData.droneId || 0,
   };
+
+  await useVerslag.handleAddVerslag(
+    verslagData,
+    setIsLoading,
+    setError,
+    setIsOpen,
+    setFormData
+  );
+};
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
