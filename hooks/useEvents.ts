@@ -50,7 +50,7 @@ async function getEvents(): Promise<Event[]> {
 const handleDelete = async (id: number) => {
       if (!confirm(`Are you sure you want to delete event ${id}?`)) return;
       try {
-          const res = await fetch(`/api/events/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
           if (res.ok) {
               alert('Event deleted successfully');
               // TODO: Refresh data - Need a better way, e.g., router.refresh() or state management

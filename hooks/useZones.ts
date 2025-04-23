@@ -2,6 +2,17 @@ import { Zone } from '@/app/types';
 
 const apiUrl = 'https://drone.ziasvannes.tech/api/zones';
 
+// Define the input type expected by the API (matching backend)
+interface ZoneApiInput {
+  naam: string;
+  breedte: number;
+  lengte: number;
+  evenement_id: number;
+}
+
+// Define the type for the reset function
+type ResetZoneForm = () => void;
+
 
 function getTypeBadgeVariant(type: Zone['type']) {
   const variants = {
@@ -24,41 +35,47 @@ function getStatusBadgeVariant(status: Zone['status']) {
 
 // Actions
 async function handleAddZone(
-  zoneData: Zone,
+  zoneData: ZoneApiInput, // Expect the correct structure
   setIsLoading: (loading: boolean) => void,
   setError: (error: string | null) => void,
   setIsOpen: (open: boolean) => void,
-  setFormData: (data: Partial<Zone>) => void
+  resetForm: ResetZoneForm // Use the specific reset function type
 ) {
   try {
     setIsLoading(true);
     setError(null);
+    console.log("Sending Zone Data to API:", zoneData); // Log data being sent
 
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(zoneData),
+      body: JSON.stringify(zoneData), // Send the correct data
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to add zone');
+      let errorMsg = 'Failed to add zone';
+      try {
+        const errorData = await response.json();
+        console.error("API Error Response:", errorData);
+        errorMsg = errorData.error || `HTTP error! status: ${response.status}`;
+      } catch (jsonError) {
+        // If response is not JSON
+        errorMsg = `HTTP error! status: ${response.status}`;
+        console.error("Non-JSON API Error Response:", await response.text());
+      }
+      throw new Error(errorMsg);
     }
 
-    // Reset & close form
-    setFormData({
-      name: '',
-      type: 'RESTRICTED',
-      status: 'ACTIVE',
-    });
+    // Success
+    resetForm(); // Call the reset function passed from the dialog
     setIsOpen(false);
+    alert('Zone added successfully!');
 
     // Optionally refresh the data
-    // You might want to use SWR or React Query for better data fetching
-    window.location.reload();
-  } catch (error) {
+    window.location.reload(); // Simple refresh
+  } catch (error: any) {
     console.error("Error adding zone:", error);
-    setError(error instanceof Error ? error.message : "Failed to add zone");
+    setError(error.message || "An unknown error occurred while adding the zone.");
   } finally {
     setIsLoading(false);
   }
@@ -84,23 +101,27 @@ async function handleDelete(id: string) {
   }
 }
 
-// Functie voor het ophalen van alle zones
 async function getZones(): Promise<Zone[]> {
+  // Make sure this fetches from the correct URL (absolute or relative based on deployment)
+  console.log(`Fetching zones from: ${apiUrl}`);
   try {
-    // Gebruik absolute URL voor externe API's of relatieve URL voor interne API routes
     const response = await fetch(apiUrl, {
-      cache: 'no-store', // Zorgt ervoor dat data altijd vers is
-      // next: { revalidate: 60 }, // Alternatief: Cache data voor 60 seconden
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json' },
     });
-
     if (!response.ok) {
-      throw new Error(`Failed to fetch zones: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch zones: ${response.status} - ${errorText.substring(0, 100)}`);
     }
-
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const responseText = await response.text();
+      throw new Error(`API route ${apiUrl} did not return JSON. Received: ${contentType}. Body: ${responseText.substring(0, 100)}`);
+    }
     return await response.json();
   } catch (error) {
     console.error('Error fetching zones:', error);
-    throw error;
+    throw error; // Re-throw to be caught by page component
   }
 }
 
