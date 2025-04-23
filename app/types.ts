@@ -80,3 +80,12 @@ export interface DockingCyclus {
   DockingId: number;
   CyclusId: number;
 }
+
+export interface Event {
+  Id: number;
+  Naam: string;
+  StartDatum: string;
+  EindDatum: string;
+  StartTijd: string;
+  Tijdsduur: string;
+}
