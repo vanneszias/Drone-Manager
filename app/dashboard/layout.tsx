@@ -20,6 +20,9 @@ export default function DashboardLayout({
             <a href="/dashboard/event" className="block py-2 px-4 hover:bg-muted rounded">Events</a>
             <a href='/dashboard/zones' className="block py-2 px-4 hover:bg-muted rounded">Zones</a>
             <a href="/dashboard/drones" className="block py-2 px-4 hover:bg-muted rounded">Drones</a>
+            <a href="/dashboard/startplaats" className="block py-2 px-4 hover:bg-muted rounded">Startplaats</a>
+            <a href="/dashboard/vluchtcyclus" className="block py-2 px-4 hover:bg-muted rounded">Vlucht Cyclus</a>
+            <a href="/dashboard/dockings" className="block py-2 px-4 hover:bg-muted rounded">Dockings</a>
           </nav>
         </aside>
         <main className="flex-1 p-4 md:p-8">
