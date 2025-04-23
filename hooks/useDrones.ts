@@ -1,19 +1,15 @@
 import { Drone } from '@/app/types';
 
-
-// Get the API URL from the environment variables
 const apiUrl = 'https://drone.ziasvannes.tech/api/drones';
 
 // Function to fetch drones from your API
 async function getDrones(): Promise<Drone[]> {
-  // --- FIX: Use a relative path for server-side fetch ---
-  // This tells Next.js to route the request internally, applying rewrites.
   console.log(`Server-side fetch initiated for: ${apiUrl}`); // Add logging
 
   try {
     const res = await fetch(apiUrl, {
         cache: 'no-store', // Disable caching for dynamic data
-        headers: { // Good practice
+        headers: {
             'Accept': 'application/json',
         }
     });
@@ -104,7 +100,7 @@ const handleAddDrone = async (formData: Drone, setIsLoading: (isLoading: boolean
 
       // Success
       setIsOpen(false); // Close dialog
-      setFormData({ status: 'OFFLINE', magOpstijgen: false, batterij: 0 , Id: 0 }); // Reset form
+      setFormData({ status: 'OFFLINE', magOpstijgen: false, batterij: 0 , id: 0 }); // Reset form
       alert('Drone added successfully!');
       // TODO: Ideally refresh data without full page reload
        window.location.reload(); // Simple refresh

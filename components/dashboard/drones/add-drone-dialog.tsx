@@ -24,12 +24,6 @@ import { Drone } from '@/app/types';
 import { PlusCircle } from 'lucide-react';
 import useDrones from '@/hooks/useDrones';
 
-// You might want to use react-hook-form for more robust validation
-// import { useForm } from "react-hook-form";
-// import { zodResolver } from "@hookform/resolvers/zod"; // If using Zod
-// import * as z from "zod"; // If using Zod
-
-// Basic type for form data (matches create_drone fields in API, minus ID)
 type DroneFormData = {
   status: Drone['status'];
   batterij: number;
