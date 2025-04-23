@@ -60,9 +60,9 @@ export default function EventList({ events }: EventListProps) {
           <TableRow key={event.id}>
             <TableCell className="font-medium">{event.id}</TableCell>
             <TableCell>{event.naam}</TableCell>
-            <TableCell>{formatDate(event.startDatum)}</TableCell>
-            <TableCell>{formatTime(event.startTijd)}</TableCell>
-            <TableCell>{formatDate(event.eindDatum)}</TableCell>
+            <TableCell>{formatDate(event.start_datum)}</TableCell>
+            <TableCell>{formatTime(event.start_tijd)}</TableCell>
+            <TableCell>{formatDate(event.eind_datum)}</TableCell>
             <TableCell>{event.tijdsduur}</TableCell> {/* Display duration as is for now */}
             <TableCell className="text-right">
               {/* Edit button - disabled for now */}
@@ -71,7 +71,7 @@ export default function EventList({ events }: EventListProps) {
                 <span className="sr-only">Edit</span>
               </Button>
               {/* Delete button - uses handleDeleteEvent from the hook */}
-              <Button variant="ghost" size="icon" onClick={() => useEvents.handleDeleteEvent(event.id)}>
+              <Button variant="ghost" size="icon" onClick={() => useEvents.handleDelete(event.id)}>
                 <Trash2 className="h-4 w-4 text-destructive" />
                  <span className="sr-only">Delete</span>
               </Button>
