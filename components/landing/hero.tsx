@@ -12,13 +12,13 @@ export default function Hero() {
       {/* Gradient achtergrond */}
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-sky-300 via-blue-700 to-green-500" />
 
-      {/* Afbeelding aan rechterzijde met fade */}
+      {/* Afbeelding aan rechterzijde met fade en blend-effect */}
       <div className="absolute top-0 right-0 h-full w-[40%] z-10">
         <div className="relative h-full">
           <img
             src="/images/heroPhotoDrones.png"
             alt="Hero Drones"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover mix-blend-overlay opacity-90"
           />
           {/* Zachte horizontale fade naar links */}
           <div
@@ -27,11 +27,11 @@ export default function Hero() {
               background: "linear-gradient(to left, rgba(29, 78, 216, 0) 60%, rgba(29, 78, 216, 0.8) 100%)"
             }}
           />
-          {/* Verticale overlay voor extra sfeer */}
+          {/* Verticale overlay voor vloeiende overgang tussen afbeelding en achtergrond */}
           <div
             className="absolute inset-0 mix-blend-soft-light"
             style={{
-              background: "linear-gradient(to bottom, #7dd3fc 0%, #7dd3fc 30%, #1d4ed8 50%, #1d4ed8 60%, #22c55e 100%)"
+              background: "linear-gradient(to bottom, #B2E0FF 0%, rgba(125, 211, 252, 0.8) 30%, rgba(34, 197, 94, 0.8) 100%)"
             }}
           />
         </div>
