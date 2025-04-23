@@ -75,3 +75,10 @@ export interface VluchtCyclus {
   DroneId?: number | null | undefined;
   ZoneId?: number | null | undefined;
 }
+
+export interface Cyclus {
+  id: number;
+  startuur: string;
+  tijdsduur: string;
+  vluchtcyclusId: number;
+}
