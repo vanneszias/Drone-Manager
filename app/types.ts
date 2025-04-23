@@ -44,3 +44,11 @@ export interface Event {
   StartTijd: string;
   Tijdsduur: string;
 }
+
+export interface VluchtCyclus {
+  Id: number;
+  VerslagId: number;
+  PlaatsId: number;
+  DroneId: number;
+  ZoneId: number;
+}
