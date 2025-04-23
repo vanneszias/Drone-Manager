@@ -27,21 +27,21 @@ import useDrones from '@/hooks/useDrones';
 type DroneFormData = {
   status: Drone['status'];
   batterij: number;
-  mag_opstijgen: boolean;
+  magOpstijgen: boolean;
 };
 
 // Type for data sent to API
 type DroneApiInput = {
   status: Drone['status'];
   batterij: number;
-  mag_opstijgen: boolean;
+  magOpstijgen: boolean;
 };
 
 export function AddDroneDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<DroneFormData>({ // Use full type, provide defaults
     status: 'OFFLINE', // Default status
-    mag_opstijgen: false,
+    magOpstijgen: false,
     batterij: 100,
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -65,9 +65,9 @@ export function AddDroneDialog() {
     const apiData: DroneApiInput = {
       status: formData.status,
       batterij: formData.batterij,
-      mag_opstijgen: formData.mag_opstijgen,
+      magOpstijgen: formData.magOpstijgen,
     };
-    useDrones.handleAddDrone(apiData, setIsLoading, setError, setIsOpen, () => setFormData({ status: 'OFFLINE', batterij: 0, mag_opstijgen: false }));
+    useDrones.handleAddDrone(apiData, setIsLoading, setError, setIsOpen, () => setFormData({ status: 'OFFLINE', batterij: 0, magOpstijgen: false }));
   };
 
   return (
@@ -128,7 +128,7 @@ export function AddDroneDialog() {
               <input
                 id="mag_opstijgen"
                 type="checkbox"
-                checked={formData.mag_opstijgen || false}
+                checked={formData.magOpstijgen || false}
                 onChange={handleInputChange}
                 className="col-span-3 h-4 w-4 justify-self-start"
               />
