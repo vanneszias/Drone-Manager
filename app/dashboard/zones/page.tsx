@@ -1,12 +1,12 @@
 import React from 'react';
 import ZoneList from '@/components/dashboard/zones/zone-list';
 import { AddZoneDialog } from '@/components/dashboard/zones/add-zone-dialog';
-import { getZones } from '@/lib/zone-service'; // Server-side functie
+import useZones from '@/hooks/useZones';
 
 export default async function ZonesPage() {
   try {
     // Direct server-side data fetching
-    const zones = await getZones();
+    const zones = await useZones.getZones();
 
     return (
       <div className="container mx-auto py-10">

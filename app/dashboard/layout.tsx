@@ -17,6 +17,7 @@ export default function DashboardLayout({
         <aside className="w-64 border-r p-4 hidden md:block">
           <nav>
             {/* Navigation Links */}
+            <a href='/dashboard/zones' className="block py-2 px-4 hover:bg-muted rounded">Zones</a>
             <a href="/dashboard/drones" className="block py-2 px-4 hover:bg-muted rounded">Drones</a>
             {/* ... other links ... */}
           </nav>
