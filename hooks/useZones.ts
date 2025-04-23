@@ -127,4 +127,6 @@ export default {
   getZoneById,
   handleAddZone,
   handleDelete,
+  getTypeBadgeVariant,
+  getStatusBadgeVariant,
 };
