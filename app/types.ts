@@ -1,3 +1,5 @@
+import { DateRange } from 'react-day-picker';
+
 export interface User {
   id: string;
   name: string;
@@ -11,18 +13,19 @@ export interface ApiResponse<T> {
 }
 
 export interface Drone {
-  Id: number;
+  id: number;
   status: 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'OFFLINE';
   batterij: number; // Battery level
   magOpstijgen: boolean; // Allowed to take off
 }
 
 // Add other types as needed (Event, Zone, etc.)
-export interface Evenement {
-  Id: number;
-  StartDatum: string; // Dates are strings in JSON
-  EindDatum: string;
-  StartTijd: string;  // Times are strings in JSON
-  Tijdsduur: string;
-  Naam: string;
+// Renamed from Evenement and using camelCase fields
+export interface Event {
+  id: number;
+  naam: string;
+  start_datum: string; // Store as YYYY-MM-DD string
+  eind_datum: string;  // Store as YYYY-MM-DD string
+  start_tijd: string;  // Store as HH:MM or HH:MM:SS string
+  tijdsduur: string; // Store as HH:MM or HH:MM:SS string
 }

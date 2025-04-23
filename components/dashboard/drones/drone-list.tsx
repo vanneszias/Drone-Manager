@@ -41,8 +41,8 @@ export default function DroneList({ drones }: DroneListProps) {
       </TableHeader>
       <TableBody>
         {drones.map((drone) => (
-          <TableRow key={drone.Id}>
-            <TableCell className="font-medium">{drone.Id}</TableCell>
+          <TableRow key={drone.id}>
+            <TableCell className="font-medium">{drone.id}</TableCell>
             <TableCell>
               <Badge className={useDrones.getStatusBadgeVariant(drone.status)}>{drone.status}</Badge>
             </TableCell>
@@ -55,7 +55,7 @@ export default function DroneList({ drones }: DroneListProps) {
                 <Edit className="h-4 w-4" />
                 <span className="sr-only">Edit</span>
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => useDrones.handleDelete(drone.Id)}>
+              <Button variant="ghost" size="icon" onClick={() => useDrones.handleDelete(drone.id)}>
                 <Trash2 className="h-4 w-4 text-destructive" />
                  <span className="sr-only">Delete</span>
               </Button>
