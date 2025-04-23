@@ -1,12 +1,12 @@
-from helpers.evenement_helper import EvenementHelper
-from helpers.zone_helper import ZoneHelper
-from helpers.startplaats_helper import StartplaatsHelper
-from helpers.verslag_helper import VerslagHelper
-from helpers.drone_helper import DroneHelper
-from helpers.docking_helper import DockingHelper
-from helpers.cyclus_helper import CyclusHelper
-from helpers.vluchtcyclus_helper import VluchtCyclusHelper
-from helpers.dockingcyclus_helper import DockingCyclusHelper
+from .evenement_helper import EvenementHelper
+from .zone_helper import ZoneHelper
+from .startplaats_helper import StartplaatsHelper
+from .verslag_helper import VerslagHelper
+from .drone_helper import DroneHelper
+from .docking_helper import DockingHelper
+from .cyclus_helper import CyclusHelper
+from .vluchtcyclus_helper import VluchtCyclusHelper
+from .dockingcyclus_helper import DockingCyclusHelper
 
 # This makes all helper classes available when importing from the helpers package
-# Example: from helpers import EvenementHelper
+# Example: from .helpers import EvenementHelper (if importing from api/app.py)

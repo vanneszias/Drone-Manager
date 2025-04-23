@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 from datetime import time
-from config import supabase
+from ..config import supabase
 
 class CyclusHelper:
     @staticmethod

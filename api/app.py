@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 
 # Import all helper classes
-from helpers import (
+from .helpers import (
     EvenementHelper, 
     ZoneHelper, 
     StartplaatsHelper, 

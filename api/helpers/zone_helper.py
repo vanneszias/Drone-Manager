@@ -1,5 +1,5 @@
 from typing import Dict, List
-from config import supabase
+from ..config import supabase
 
 class ZoneHelper:
     @staticmethod
