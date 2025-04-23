@@ -1,3 +1,5 @@
+import { DateRange } from 'react-day-picker';
+
 export interface User {
   id: string;
   name: string;
@@ -11,7 +13,7 @@ export interface ApiResponse<T> {
 }
 
 export interface Drone {
-  Id: number;
+  id: number;
   status: 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'OFFLINE';
   batterij: number; // Battery level
   magOpstijgen: boolean; // Allowed to take off
@@ -32,4 +34,13 @@ export interface Zone {
   name: string;       
   type: 'RESTRICTED' | 'NO_FLY' | 'LANDING' | 'OPERATIONAL';  // Type zone
   status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
+}
+
+export interface Event {
+  id: number;
+  naam: string;
+  start_datum: string; // Store as YYYY-MM-DD string
+  eind_datum: string;  // Store as YYYY-MM-DD string
+  start_tijd: string;  // Store as HH:MM or HH:MM:SS string
+  tijdsduur: string; // Store as HH:MM or HH:MM:SS string
 }

@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 from datetime import date, time
-from config import supabase
+from ..config import supabase
 
 class EvenementHelper:
     @staticmethod

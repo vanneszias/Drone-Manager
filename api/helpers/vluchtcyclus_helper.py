@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional
-from config import supabase
+from ..config import supabase
 
 class VluchtCyclusHelper:
     @staticmethod

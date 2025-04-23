@@ -18,8 +18,8 @@ export default function DashboardLayout({
           <nav>
             {/* Navigation Links */}
             <a href='/dashboard/zones' className="block py-2 px-4 hover:bg-muted rounded">Zones</a>
+            <a href="/dashboard/event" className="block py-2 px-4 hover:bg-muted rounded">Events</a>
             <a href="/dashboard/drones" className="block py-2 px-4 hover:bg-muted rounded">Drones</a>
-            {/* ... other links ... */}
           </nav>
         </aside>
         <main className="flex-1 p-4 md:p-8">
