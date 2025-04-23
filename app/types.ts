@@ -36,6 +36,14 @@ export interface Zone {
   status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
 }
 
+export interface Startplaats {
+  id: number;
+  naam: string;
+  locatie: string;
+  isBeschikbaar: boolean; // Indicates if the startplaats is available
+}
+
+
 export interface Event {
   Id: number;
   Naam: string;
