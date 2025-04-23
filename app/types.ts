@@ -44,3 +44,11 @@ export interface Event {
   StartTijd: string;
   Tijdsduur: string;
 }
+
+export interface Verslag {
+  id: number;
+  onderwerp: string;
+  beschrijving: string;
+  isverzonden: boolean;
+  droneId: number;
+}
