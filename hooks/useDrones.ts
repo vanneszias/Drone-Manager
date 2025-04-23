@@ -6,7 +6,7 @@ const apiUrl = 'https://drone.ziasvannes.tech/api/drones';
 interface DroneApiInput {
   status: Drone['status'];
   batterij: number;
-  mag_opstijgen: boolean; // Use snake_case for API
+  magOpstijgen: boolean;
 }
 
 // Type for the reset function argument
