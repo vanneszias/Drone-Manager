@@ -54,14 +54,14 @@ export default function Hero() {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   size="lg"
-                  className="gap-2 bg-white/70 border-white/60 text-blue-700 hover:bg-white/50"
+                  className="gap-2 bg-white/70 border-white/60 text-blue-700 hover:bg-white/10"
                   onClick={() => router.push("/dashboard")}
                 >
                   Get Started <ArrowRight className="h-4 w-4" />
                 </Button>
                 <Button
                   size="lg"
-                  className="gap-2 bg-white/70 border-white/60 text-blue-700 hover:bg-white/50"
+                  className="gap-2 bg-white/70 border-white/60 text-blue-700 hover:bg-white/10"
                 >
                   Request Demo
                 </Button>
