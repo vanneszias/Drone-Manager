@@ -443,7 +443,6 @@ def create_verslag():
     if not data:
          return jsonify({"error": "No input data provided"}), 400
 
-    # Correct: Expect DB fields
     required_keys = ['onderwerp', 'inhoud']
     missing_keys = [key for key in required_keys if key not in data]
     if missing_keys:
@@ -458,29 +457,44 @@ def create_verslag():
         is_geaccepteerd_val = data.get('isgeaccepteerd', False)
         if not isinstance(is_geaccepteerd_val, bool): is_geaccepteerd_val = False
 
+        vlucht_cyclus_id_val = data.get('vlucht_cyclus_id') # Expect snake_case from frontend JSON
+        if vlucht_cyclus_id_val is not None:
+            try:
+                vlucht_cyclus_id_val = int(vlucht_cyclus_id_val)
+            except (ValueError, TypeError):
+                 return jsonify({"error": "Invalid format for vlucht_cyclus_id, must be an integer or null"}), 400
+
         if not onderwerp_val.strip() or not inhoud_val.strip():
              raise ValueError("Onderwerp and Inhoud cannot be empty.")
 
-        # Correct: Call helper with DB fields
         verslag = VerslagHelper.create_verslag(
             onderwerp=onderwerp_val,
             inhoud=inhoud_val,
             isverzonden=is_verzonden_val,
-            isgeaccepteerd=is_geaccepteerd_val
+            isgeaccepteerd=is_geaccepteerd_val,
+            vlucht_cyclus_id=vlucht_cyclus_id_val # Pass the new ID
         )
         if verslag:
             app.logger.info(f"Verslag created successfully: {verslag}")
             return jsonify(verslag), 201
         else:
-             app.logger.error("VerslagHelper.create_verslag returned None")
-             return jsonify({"error": "Failed to create verslag"}), 500
+             # Check if the failure was due to FK constraint (if helper doesn't raise)
+             app.logger.error("VerslagHelper.create_verslag returned None or failed")
+             # You might check DB logs or add specific error handling for FK violations
+             return jsonify({"error": "Failed to create verslag (potentially invalid VluchtCyclusId?)"}), 500
+
     except (ValueError, TypeError) as ve:
         error_msg = f"Invalid data for verslag: {ve}"
         app.logger.error(error_msg)
         return jsonify({"error": error_msg}), 400
     except Exception as e:
-        app.logger.error(f"Error creating verslag: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+         if "violates foreign key constraint" in str(e).lower() and "Verslag_VluchtCyclusId_fkey" in str(e).lower() : # Adjust constraint name if needed
+             error_msg = f"Invalid vlucht_cyclus_id provided: Reference not found."
+             app.logger.warning(error_msg)
+             return jsonify({"error": error_msg}), 400 # Bad Request due to invalid FK
+         app.logger.error(f"Error creating verslag: {e}\n{traceback.format_exc()}")
+         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
 
 @app.route('/api/verslagen/<int:verslag_id>', methods=['PUT'])
 def update_verslag(verslag_id):
@@ -491,7 +505,6 @@ def update_verslag(verslag_id):
 
     update_data = {}
     try:
-        # Correct: Update based on DB fields
         if 'onderwerp' in data:
             update_data['onderwerp'] = str(data['onderwerp'])
             if not update_data['onderwerp'].strip(): raise ValueError("Onderwerp cannot be empty.")
@@ -504,6 +517,15 @@ def update_verslag(verslag_id):
         if 'isgeaccepteerd' in data:
              if not isinstance(data['isgeaccepteerd'], bool): raise ValueError("isgeaccepteerd must be boolean.")
              update_data['isgeaccepteerd'] = data['isgeaccepteerd']
+        if 'vlucht_cyclus_id' in data: # Expect snake_case from frontend JSON
+            vc_id = data['vlucht_cyclus_id']
+            if vc_id is None:
+                 update_data['VluchtCyclusId'] = None # Allow unsetting the FK
+            else:
+                 try:
+                      update_data['VluchtCyclusId'] = int(vc_id) # Helper expects PascalCase for kwargs direct update
+                 except (ValueError, TypeError):
+                      raise ValueError("Invalid format for vlucht_cyclus_id, must be an integer or null")
 
         if not update_data:
              return jsonify({"error": "No valid fields provided for update"}), 400
@@ -513,14 +535,21 @@ def update_verslag(verslag_id):
             app.logger.info(f"Verslag {verslag_id} updated successfully: {verslag}")
             return jsonify(verslag)
         else:
-            return jsonify({"error": "Verslag not found or update failed"}), 404
+            # Check if the failure was due to FK constraint
+            app.logger.error(f"VerslagHelper.update_verslag failed for ID {verslag_id}")
+            return jsonify({"error": "Verslag not found or update failed (potentially invalid VluchtCyclusId?)"}), 404 # Or 500
+
     except ValueError as ve:
         error_msg = f"Invalid data type for update: {ve}"
         app.logger.error(error_msg)
         return jsonify({"error": error_msg}), 400
     except Exception as e:
-        app.logger.error(f"Error updating verslag {verslag_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+         if "violates foreign key constraint" in str(e).lower() and "Verslag_VluchtCyclusId_fkey" in str(e).lower():
+             error_msg = f"Invalid vlucht_cyclus_id provided for update: Reference not found."
+             app.logger.warning(error_msg)
+             return jsonify({"error": error_msg}), 400
+         app.logger.error(f"Error updating verslag {verslag_id}: {e}\n{traceback.format_exc()}")
+         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
 
 @app.route('/api/verslagen/<int:verslag_id>', methods=['DELETE'])
 def delete_verslag(verslag_id):

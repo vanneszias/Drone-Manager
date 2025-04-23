@@ -53,9 +53,18 @@ export interface Event {
 }
 
 export interface Verslag {
-  id: number;
+  Id: number;
   onderwerp: string;
-  beschrijving: string;
+  inhoud: string;
   isverzonden: boolean;
-  droneId: number;
+  isgeaccepteerd: boolean;
+  VluchtCyclusId?: number | null;
+}
+
+export interface VluchtCyclus {
+  Id: number;
+  VerslagId?: number | null;
+  PlaatsId?: number | null;
+  DroneId?: number | null;
+  ZoneId?: number | null;
 }
