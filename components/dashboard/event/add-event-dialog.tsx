@@ -1,5 +1,5 @@
-{ /* TODO: Use shadcn/ui components for the time inputs */ }
 "use client";
+{ /* TODO: Use shadcn/ui components for the time inputs */ }
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
