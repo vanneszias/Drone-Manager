@@ -2,7 +2,7 @@ import { Drone } from '@/app/types';
 
 
 // Get the API URL from the environment variables
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5328/api/drones';
+const apiUrl = 'https://drone.ziasvannes.tech/api/drones';
 
 // Function to fetch drones from your API
 async function getDrones(): Promise<Drone[]> {
