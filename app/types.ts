@@ -43,6 +43,12 @@ export interface Startplaats {
   isBeschikbaar: boolean; // Indicates if the startplaats is available
 }
 
+// Define and export the Docking type
+export interface Docking {
+  id: number;
+  naam: string;
+  locatie: string;
+}
 
 export interface Event {
   Id: number;
@@ -51,4 +57,21 @@ export interface Event {
   EindDatum: string;
   StartTijd: string;
   Tijdsduur: string;
+}
+
+export interface Verslag {
+  Id: number;
+  onderwerp: string;
+  inhoud: string;
+  isverzonden: boolean;
+  isgeaccepteerd: boolean;
+  VluchtCyclusId?: number | null;
+}
+
+export interface VluchtCyclus {
+  Id: number;
+  VerslagId?: number | null;
+  PlaatsId?: number | null;
+  DroneId?: number | null;
+  ZoneId?: number | null;
 }
