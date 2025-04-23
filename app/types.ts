@@ -36,6 +36,13 @@ export interface Zone {
   status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
 }
 
+// Define and export the Docking type
+export interface Docking {
+  id: number;
+  naam: string;
+  locatie: string;
+}
+
 export interface Event {
   Id: number;
   Naam: string;
@@ -45,10 +52,19 @@ export interface Event {
   Tijdsduur: string;
 }
 
+export interface Verslag {
+  Id: number;
+  onderwerp: string;
+  inhoud: string;
+  isverzonden: boolean;
+  isgeaccepteerd: boolean;
+  VluchtCyclusId?: number | null;
+}
+
 export interface VluchtCyclus {
   Id: number;
-  VerslagId: number;
-  PlaatsId: number;
-  DroneId: number;
-  ZoneId: number;
+  VerslagId?: number | null;
+  PlaatsId?: number | null;
+  DroneId?: number | null;
+  ZoneId?: number | null;
 }
