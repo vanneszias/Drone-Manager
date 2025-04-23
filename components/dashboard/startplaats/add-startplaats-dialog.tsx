@@ -6,10 +6,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import useStartplaats from '@/hooks/useStartplaats';
+
+interface StartplaatsFormData {
+  id: number,
+  naam: string;
+  locatie: string;
+  isBeschikbaar: boolean;
+}
+
 export function AddStartplaatsDialog() {
   const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState({ naam: '', locatie: '', isBeschikbaar: false });
+  const [formData, setFormData] = useState<StartplaatsFormData>({
+    id: 0,
+    naam: '',
+    locatie: '',
+    isBeschikbaar: false
+  });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -18,23 +33,14 @@ export function AddStartplaatsDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    try {
-      const res = await fetch('https://drone.ziasvannes.tech/api/startplaatsen', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      if (!res.ok) throw new Error('Failed to add startplaats');
-      alert('Startplaats added successfully!');
-      setIsOpen(false);
-      window.location.reload();
-    } catch (error) {
-      console.error('Error adding startplaats:', error);
-      alert('An error occurred while adding the startplaats.');
-    } finally {
-      setIsLoading(false);
-    }
+
+    useStartplaats.handleAddStartplaats(
+      formData,
+      setIsLoading,
+      setError,
+      setIsOpen,
+      setFormData,
+    )
   };
 
   return (
