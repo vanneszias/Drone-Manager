@@ -1,6 +1,6 @@
 import React from "react";
 import DockingList from "@/components/dashboard/dockings/docking-list";
-import { AddDockingDialog } from "@/components/dashboard/dockings/add-dockings-dialogue";
+import { AddDockingDialog } from "@/components/dashboard/dockings/add-dockings-dialog";
 import useDockings from "@/hooks/useDockings";
 
 export default async function DockingsPage() {
