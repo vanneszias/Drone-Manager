@@ -3,10 +3,10 @@ import { VluchtCyclus } from '@/app/types';
 const apiUrl = 'https://drone.ziasvannes.tech/api/vlucht-cycli';
 
 interface VluchtCyclusInput {
-    VerslagId: number;
-    PlaatsId: number;
-    DroneId: number;
-    ZoneId: number;
+    VerslagId: number | undefined;
+    PlaatsId: number | undefined;
+    DroneId: number | undefined;
+    ZoneId: number | undefined;
 }
 
 async function getVluchtCycli(): Promise<VluchtCyclus[]> {

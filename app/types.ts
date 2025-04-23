@@ -70,8 +70,8 @@ export interface Verslag {
 
 export interface VluchtCyclus {
   Id: number;
-  VerslagId?: number | null;
-  PlaatsId?: number | null;
-  DroneId?: number | null;
-  ZoneId?: number | null;
+  VerslagId?: number | null | undefined;
+  PlaatsId?: number | null | undefined;
+  DroneId?: number | null | undefined;
+  ZoneId?: number | null | undefined;
 }
