@@ -25,15 +25,14 @@ export default function CTA() {
                     <div className="flex flex-col sm:flex-row gap-4 mt-4">
                         <Button 
                             size="lg" 
-                            className="gap-2 bg-white text-blue-700 hover:bg-white/80"
+                            className="gap-2 bg-white text-blue-700 hover:bg-white/10"
                         >
                             Start Free Trial <ArrowRight className="h-4 w-4" />
                         </Button>
                         <Button 
                             size="lg" 
-                            variant="outline"
-                            className="border-white text-white hover:bg-white/10"
-                        >
+                            className="gap-2 bg-white text-blue-700 hover:bg-white/10"
+							>
                             Schedule a Demo
                         </Button>
                     </div>
