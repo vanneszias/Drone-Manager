@@ -1,8 +1,12 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "../ui/card";
+"use client";
+
+import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Globe, Shield, Battery, MapPin, ChevronRight } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function Features() {
+  const router = useRouter();
     return (
          <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-background">
         <div className="container px-4 md:px-6 mx-auto max-w-7xl">
@@ -11,6 +15,13 @@ export default function Features() {
               <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">
                 Powerful Features
               </div>
+              <Button size="lg" className="gap-2"
+                onClick={() => {
+                  router.push("/home")
+              }}
+              >
+                Home Menu
+              </Button>
               <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">Everything You Need to Manage Your Drones</h2>
               <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                 Our platform provides comprehensive tools for monitoring, managing, and optimizing your drone operations.
