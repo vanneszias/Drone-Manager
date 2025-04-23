@@ -26,3 +26,10 @@ export interface Evenement {
   Tijdsduur: string;
   Naam: string;
 }
+
+export interface Zone {
+  Id: string;         
+  name: string;       
+  type: 'RESTRICTED' | 'NO_FLY' | 'LANDING' | 'OPERATIONAL';  // Type zone
+  status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
+}
