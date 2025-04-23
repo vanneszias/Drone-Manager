@@ -18,15 +18,6 @@ export default function Features() {
             <div className="inline-block rounded-lg bg-white/20 px-3 py-1 text-sm text-white">
               Powerful Features
             </div>
-            <Button 
-              size="lg" 
-              className="gap-2 bg-white text-blue-700 hover:bg-white/80"
-              onClick={() => {
-                router.push("/home")
-              }}
-            >
-              Home Menu
-            </Button>
             <h2 className="text-3xl font-bold tracking-tighter md:text-4xl lg:text-5xl text-white">Everything You Need to Manage Your Drones</h2>
             <p className="max-w-[900px] text-white/90 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
               Our platform provides comprehensive tools for monitoring, managing, and optimizing your drone operations.
