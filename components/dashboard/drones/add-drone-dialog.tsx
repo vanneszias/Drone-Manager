@@ -27,22 +27,22 @@ import useDrones from '@/hooks/useDrones';
 type DroneFormData = {
   status: Drone['status'];
   batterij: number;
-  magOpstijgen: boolean;
+  mag_opstijgen: boolean;
 };
 
 // Type for data sent to API
 type DroneApiInput = {
   status: Drone['status'];
   batterij: number;
-  mag_opstijgen: boolean; // Use snake_case for API
+  mag_opstijgen: boolean;
 };
 
 export function AddDroneDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<DroneFormData>({ // Use full type, provide defaults
     status: 'OFFLINE', // Default status
-    magOpstijgen: false,
-    batterij: 0,
+    mag_opstijgen: false,
+    batterij: 100,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,9 +65,9 @@ export function AddDroneDialog() {
     const apiData: DroneApiInput = {
       status: formData.status,
       batterij: formData.batterij,
-      mag_opstijgen: formData.magOpstijgen, // Send snake_case
+      mag_opstijgen: formData.mag_opstijgen,
     };
-    useDrones.handleAddDrone(apiData, setIsLoading, setError, setIsOpen, () => setFormData({ status: 'OFFLINE', batterij: 0, magOpstijgen: false }));
+    useDrones.handleAddDrone(apiData, setIsLoading, setError, setIsOpen, () => setFormData({ status: 'OFFLINE', batterij: 0, mag_opstijgen: false }));
   };
 
   return (
@@ -123,12 +123,12 @@ export function AddDroneDialog() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="magOpstijgen" className="text-right">Ready for Takeoff</Label> {/* Keep UI ID camelCase for state */}
+              <Label htmlFor="mag_opstijgen" className="text-right">Ready for Takeoff</Label> {/* Keep UI ID camelCase for state */}
               {/* Simple Checkbox - consider using Shadcn's Checkbox component */}
               <input
-                id="magOpstijgen"
+                id="mag_opstijgen"
                 type="checkbox"
-                checked={formData.magOpstijgen || false}
+                checked={formData.mag_opstijgen || false}
                 onChange={handleInputChange}
                 className="col-span-3 h-4 w-4 justify-self-start"
               />
