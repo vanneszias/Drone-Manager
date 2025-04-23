@@ -44,3 +44,11 @@ export interface Event {
   start_tijd: string;  // Store as HH:MM or HH:MM:SS string
   tijdsduur: string; // Store as HH:MM or HH:MM:SS string
 }
+
+export interface Verslag {
+  id: number;
+  onderwerp: string;
+  beschrijving: string;
+  isverzonden: boolean;
+  droneId: number;
+}
