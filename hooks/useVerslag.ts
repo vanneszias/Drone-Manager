@@ -2,6 +2,14 @@ import { Verslag } from '@/app/types';
 
 const apiUrl = 'https://drone.ziasvannes.tech/api/verslagen';
 
+interface VerslagInput {
+  onderwerp: string;
+  inhoud: string;
+  isverzonden?: boolean;
+  isgeaccepteerd?: boolean;
+  vlucht_cyclus_id?: number | null | string;
+}
+
 // Function to fetch verslagen from API
 async function getVerslagen(): Promise<Verslag[]> {
   console.log(`Server-side fetch initiated for: ${apiUrl}`);
@@ -43,7 +51,7 @@ async function getVerslagen(): Promise<Verslag[]> {
 
 const handleDelete = async (id: number) => {
   if (!confirm(`Are you sure you want to delete verslag ${id}?`)) return;
-  
+
   try {
     const res = await fetch(`${apiUrl}/${id}`, {
       method: 'DELETE',
@@ -67,29 +75,43 @@ const handleDelete = async (id: number) => {
 };
 
 const handleAddVerslag = async (
-  formData: Verslag,
+  formData: VerslagInput, // Use the updated input type
   setIsLoading: (isLoading: boolean) => void,
   setError: (error: string | null) => void,
   setIsOpen: (isOpen: boolean) => void,
-  setFormData: (formData: Verslag) => void
+  resetForm: () => void
 ) => {
   setIsLoading(true);
   setError(null);
 
-  // Basic validation
-  if (!formData.onderwerp) {
-    setError("Onderwerp is required.");
+  if (!formData.onderwerp || !formData.inhoud) {
+    setError("Onderwerp (Subject) and Inhoud (Content) are required.");
     setIsLoading(false);
     return;
   }
 
-  // Prepare data for API
-  const apiData = {
+  // Prepare data for API - ensure snake_case keys match API endpoint expectation
+  const apiData: { [key: string]: any } = { // Use index signature for dynamic keys
     onderwerp: formData.onderwerp,
-    beschrijving: formData.beschrijving,
-    isverzonden: formData.isverzonden,
-    droneId: formData.droneId
+    inhoud: formData.inhoud,
+    isverzonden: formData.isverzonden ?? false,
+    isgeaccepteerd: formData.isgeaccepteerd ?? false,
   };
+
+  // Only include vlucht_cyclus_id if it's provided and not null/undefined
+  if (formData.vlucht_cyclus_id !== undefined && formData.vlucht_cyclus_id !== null) {
+    // Ensure it's a valid number before sending
+    const idNum = Number(formData.vlucht_cyclus_id);
+    if (!isNaN(idNum) && idNum > 0) {
+      apiData.vlucht_cyclus_id = idNum; // Add snake_case key
+    } else if (formData.vlucht_cyclus_id !== null) { // Don't send if it's just an empty string from input
+      setError("Invalid Flight Cycle ID provided. Must be a positive number.");
+      setIsLoading(false);
+      return;
+    }
+  }
+
+  console.log("Sending Verslag data to API:", apiData);
 
   try {
     const response = await fetch(apiUrl, {
@@ -98,25 +120,27 @@ const handleAddVerslag = async (
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify(apiData)
+      body: JSON.stringify(apiData) // Send corrected data
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to add verslag (${response.status})`);
+      let errorMsg = `Failed to add verslag (${response.status})`;
+      try {
+        const errorData = await response.json();
+        console.error("API Error Response:", errorData);
+        errorMsg = errorData.error || errorMsg;
+      } catch (e) {
+        console.error("Non-JSON API Error Response:", await response.text());
+      }
+      throw new Error(errorMsg);
     }
 
+    // Success
     setIsOpen(false);
-    setFormData({
-      id: 0,
-      onderwerp: '',
-      beschrijving: '',
-      isverzonden: false,
-      droneId: 0
-    });
-
+    resetForm();
     alert('Verslag added successfully!');
     window.location.reload();
+
   } catch (error) {
     console.error('Error adding verslag:', error);
     setError(error instanceof Error ? error.message : 'Failed to add verslag');
