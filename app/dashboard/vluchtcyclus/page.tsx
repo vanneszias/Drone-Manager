@@ -1,14 +1,11 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { VluchtCyclus } from "@/app/types";
+import React from 'react';
 import VluchtCyclusList from "@/components/dashboard/vluchtcyclus/vluchtcyclus-list";
-import { Button } from "@/components/ui/button";
 import { AddVluchtCyclusDialog } from "@/components/dashboard/vluchtcyclus/add-vluchtcyclus-dialog";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"; // Keep Card imports
 import useVluchtCyclus from "@/hooks/useVluchtCyclus";
+import { VluchtCyclus } from "@/app/types";
 
-export default function VluchtCyclusPage() {
+/* // Remove client-side fetching logic
   const [vluchtcyclussen, setVluchtcyclussen] = useState<VluchtCyclus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +28,14 @@ export default function VluchtCyclusPage() {
 
     loadVluchtCycli();
   }, [getVluchtCycli]);
+*/
 
+export default async function VluchtCyclusPage() {
+  const { getVluchtCycli } = useVluchtCyclus;
+  let vluchtcyclussen: VluchtCyclus[] = [];
+  let error: string | null = null;
+
+  /* // Loading state handled by Server Component Suspense or page transition
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -42,21 +46,29 @@ export default function VluchtCyclusPage() {
       </div>
     );
   }
+  */
+  try {
+    vluchtcyclussen = await getVluchtCycli();
+  } catch (err) {
+    console.error('Error fetching VluchtCycli:', err);
+    error = err instanceof Error ? err.message : 'Failed to load VluchtCycli';
+  }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-destructive font-semibold">Error loading vluchtcyclussen</p>
-          <p className="text-sm text-muted-foreground mt-2">{error}</p>
-          <Button
-            onClick={() => window.location.reload()}
-            className="mt-4"
-            variant="outline"
+      <div className="container mx-auto py-10 text-center text-red-500">
+        <h1 className="text-2xl font-bold mb-4">Error Loading Vlucht Cycli</h1>
+        <p>{error}</p>
+        <p className="mt-4">
+          Please check the API connection and database.
+          {/* Retry mechanism needs client-side JS or library */}
+          {/* <button
+              onClick={() => window.location.reload()} // Simple retry for now
+              className="ml-2 px-3 py-1 border rounded hover:bg-gray-100 dark:hover:bg-gray-700"
           >
-            Retry
-          </Button>
-        </div>
+              Retry
+          </button> */}
+        </p>
       </div>
     );
   }
@@ -76,7 +88,16 @@ export default function VluchtCyclusPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <VluchtCyclusList vluchtCycli={vluchtcyclussen} />
+          {vluchtcyclussen.length > 0 ? (
+            <VluchtCyclusList vluchtCycli={vluchtcyclussen} />
+          ) : (
+            <div className="flex justify-center items-center min-h-[200px]">
+              <div className="text-center">
+                <p className="text-muted-foreground">Geen vluchtcyclussen gevonden.</p>
+                <p className="text-sm text-muted-foreground mt-1">Klik op 'Nieuwe Vluchtcyclus' om er een toe te voegen.</p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

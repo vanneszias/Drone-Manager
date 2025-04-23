@@ -30,33 +30,24 @@ export interface Evenement {
 }
 
 export interface Zone {
-  Id: string;
-  name: string;
-  type: 'RESTRICTED' | 'NO_FLY' | 'LANDING' | 'OPERATIONAL';
-  status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
+  Id: number;
+  breedte: number;
+  lengte: number;
+  naam: string;
+  EvenementId: number;
 }
 
 export interface Startplaats {
   id: number;
-  naam: string;
   locatie: string;
-  isBeschikbaar: boolean; // Indicates if the startplaats is available
+  isbeschikbaar: boolean; // DB uses snake_case
 }
 
 // Define and export the Docking type
 export interface Docking {
   id: number;
-  naam: string;
   locatie: string;
-}
-
-export interface Event {
-  Id: number;
-  Naam: string;
-  StartDatum: string;
-  EindDatum: string;
-  StartTijd: string;
-  Tijdsduur: string;
+  isbeschikbaar: boolean; // DB uses snake_case
 }
 
 export interface Verslag {
@@ -74,4 +65,18 @@ export interface VluchtCyclus {
   PlaatsId?: number | null | undefined;
   DroneId?: number | null | undefined;
   ZoneId?: number | null | undefined;
+}
+
+export interface Cyclus {
+  Id: number;
+  startuur: string; // time string 'HH:MM:SS'
+  tijdstip: string; // time string 'HH:MM:SS'
+  VluchtCyclusId?: number | null;
+}
+
+export interface DockingCyclus {
+  Id: number;
+  DroneId: number;
+  DockingId: number;
+  CyclusId: number;
 }

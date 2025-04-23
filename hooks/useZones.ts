@@ -13,7 +13,8 @@ interface ZoneApiInput {
 // Define the type for the reset function
 type ResetZoneForm = () => void;
 
-
+// Remove badge variant functions if Zone type doesn't have type/status anymore
+/*
 function getTypeBadgeVariant(type: Zone['type']) {
   const variants = {
     'RESTRICTED': 'bg-amber-100 text-amber-800 hover:bg-amber-200/80',
@@ -32,6 +33,7 @@ function getStatusBadgeVariant(status: Zone['status']) {
   };
   return variants[status] || 'bg-gray-100 text-gray-800 hover:bg-gray-200/80';
 }
+*/
 
 // Actions
 async function handleAddZone(
@@ -81,7 +83,7 @@ async function handleAddZone(
   }
 }
 
-async function handleDelete(id: string) {
+async function handleDelete(id: string) { // ID is now number, but API expects string in URL
   if (confirm('Are you sure you want to delete this zone?')) {
     try {
       const response = await fetch(`${apiUrl}/${id}`, {
@@ -89,13 +91,18 @@ async function handleDelete(id: string) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete zone');
+        let errorMsg = `Failed to delete zone (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch (e) { /* Ignore if response not JSON */ }
+        throw new Error(errorMsg);
       }
-
+      alert('Zone deleted successfully!');
       // Refresh the page to show updated list
       window.location.reload();
-    } catch (error) {
+    } catch (error: any) {
+      alert(error.message || 'Failed to delete zone');
       console.error("Error deleting zone:", error);
     }
   }
@@ -118,7 +125,16 @@ async function getZones(): Promise<Zone[]> {
       const responseText = await response.text();
       throw new Error(`API route ${apiUrl} did not return JSON. Received: ${contentType}. Body: ${responseText.substring(0, 100)}`);
     }
-    return await response.json();
+    const data = await response.json();
+    // Map API response (PascalCase EvenementId) to frontend type (PascalCase)
+    return data.map((item: any) => ({
+      Id: item.Id,
+      breedte: item.breedte,
+      lengte: item.lengte,
+      naam: item.naam,
+      EvenementId: item.EvenementId
+    })) as Zone[];
+
   } catch (error) {
     console.error('Error fetching zones:', error);
     throw error; // Re-throw to be caught by page component
@@ -126,7 +142,7 @@ async function getZones(): Promise<Zone[]> {
 }
 
 // Functie voor het ophalen van één specifieke zone
-async function getZoneById(id: string): Promise<Zone> {
+async function getZoneById(id: string): Promise<Zone> { // ID is number, API expects string
   try {
     const response = await fetch(`${apiUrl}/${id}`, {
       cache: 'no-store',
@@ -136,7 +152,16 @@ async function getZoneById(id: string): Promise<Zone> {
       throw new Error(`Failed to fetch zone: ${response.status}`);
     }
 
-    return await response.json();
+    const item = await response.json();
+    // Map API response (PascalCase EvenementId) to frontend type (PascalCase)
+    return {
+      Id: item.Id,
+      breedte: item.breedte,
+      lengte: item.lengte,
+      naam: item.naam,
+      EvenementId: item.EvenementId
+    } as Zone;
+
   } catch (error) {
     console.error(`Error fetching zone with ID ${id}:`, error);
     throw error;
@@ -148,6 +173,7 @@ export default {
   getZoneById,
   handleAddZone,
   handleDelete,
-  getTypeBadgeVariant,
-  getStatusBadgeVariant,
+  // Remove badge variants if not needed
+  // getTypeBadgeVariant,
+  // getStatusBadgeVariant,
 };
