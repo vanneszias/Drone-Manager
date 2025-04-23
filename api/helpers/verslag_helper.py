@@ -1,85 +1,142 @@
 from typing import Dict, List, Optional
 from ..config import supabase
+import logging
+
+logger = logging.getLogger(__name__)
 
 class VerslagHelper:
+    TABLE_NAME = "Verslag"
+
     @staticmethod
     def get_all_verslagen() -> List[Dict]:
         """Get all reports"""
-        # Select should now include VluchtCyclusId by default if using '*'
-        response = supabase.table("Verslag").select("*").execute()
-        return response.data
+        try:
+            response = supabase.table(VerslagHelper.TABLE_NAME).select("*").execute()
+            return response.data
+        except Exception as e:
+            logger.error(f"Error fetching all verslagen: {e}")
+            raise
 
     @staticmethod
-    def get_verslag_by_id(verslag_id: int) -> Dict:
+    def get_verslag_by_id(verslag_id: int) -> Optional[Dict]:
         """Get a specific report by ID"""
-        response = supabase.table("Verslag").select("*").eq("Id", verslag_id).execute()
-        return response.data[0] if response.data else None
+        try:
+            response = supabase.table(VerslagHelper.TABLE_NAME).select("*").eq("Id", verslag_id).limit(1).execute()
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error fetching verslag {verslag_id}: {e}")
+            raise
 
     @staticmethod
-    def get_verslagen_by_status(is_verzonden: bool = None, is_geaccepteerd: bool = None) -> List[Dict]:
+    def get_verslagen_by_status(is_verzonden: Optional[bool] = None, is_geaccepteerd: Optional[bool] = None) -> List[Dict]:
         """Get reports filtered by status"""
-        query = supabase.table("Verslag").select("*")
-        if is_verzonden is not None:
-            query = query.eq("isverzonden", is_verzonden)
-        if is_geaccepteerd is not None:
-            query = query.eq("isgeaccepteerd", is_geaccepteerd)
-        response = query.execute()
-        return response.data
+        try:
+            query = supabase.table(VerslagHelper.TABLE_NAME).select("*")
+            if is_verzonden is not None:
+                query = query.eq("isverzonden", is_verzonden)
+            if is_geaccepteerd is not None:
+                query = query.eq("isgeaccepteerd", is_geaccepteerd)
+            response = query.execute()
+            return response.data
+        except Exception as e:
+            logger.error(f"Error fetching verslagen by status (verzonden={is_verzonden}, geaccepteerd={is_geaccepteerd}): {e}")
+            raise
 
     @staticmethod
     def create_verslag(onderwerp: str, inhoud: str, is_verzonden: bool = False,
-                      is_geaccepteerd: bool = False, vlucht_cyclus_id: Optional[int] = None) -> Dict: # Added vlucht_cyclus_id
+                      is_geaccepteerd: bool = False, vlucht_cyclus_id: Optional[int] = None) -> Optional[Dict]:
         """Create a new report"""
-        verslag_data = {
-            "onderwerp": onderwerp,
-            "inhoud": inhoud,
-            "isverzonden": is_verzonden,
-            "isgeaccepteerd": is_geaccepteerd
-        }
-        # Add VluchtCyclusId only if it's provided
-        if vlucht_cyclus_id is not None:
-             verslag_data["VluchtCyclusId"] = vlucht_cyclus_id
+        if not onderwerp or not onderwerp.strip(): raise ValueError("Onderwerp cannot be empty")
+        if not inhoud or not inhoud.strip(): raise ValueError("Inhoud cannot be empty")
 
-        response = supabase.table("Verslag").insert(verslag_data).execute()
-        # Check for API errors during insert
-        if response.data:
-            return response.data[0]
-        elif hasattr(response, 'error') and response.error:
-             print(f"Supabase insert error: {response.error.message}")
-             # You might want to raise an exception here or return None based on your error handling strategy
-             return None
-        else:
-             # Handle unexpected response structure
-             print("Unexpected response from Supabase during insert")
-             return None
+        verslag_data = {
+            "onderwerp": onderwerp.strip(),
+            "inhoud": inhoud.strip(),
+            "isverzonden": is_verzonden,
+            "isgeaccepteerd": is_geaccepteerd,
+            # Add VluchtCyclusId only if it's provided (handles None correctly)
+            "VluchtCyclusId": vlucht_cyclus_id
+        }
+
+        try:
+            response = supabase.table(VerslagHelper.TABLE_NAME).insert(verslag_data).execute()
+            if response.data:
+                return response.data[0]
+            else:
+                if hasattr(response, 'error') and response.error:
+                    logger.error(f"Supabase create verslag error: {response.error.message}")
+                    if "foreign key constraint" in response.error.message and "Verslag_VluchtCyclusId_fkey" in response.error.message:
+                         raise ValueError(f"Invalid VluchtCyclusId: {vlucht_cyclus_id} does not exist.")
+                else:
+                    logger.error("Supabase create verslag failed, no data returned.")
+                return None
+        except Exception as e:
+            if "violates foreign key constraint" in str(e) and "Verslag_VluchtCyclusId_fkey" in str(e):
+                 logger.warning(f"Attempted to create verslag with non-existent VluchtCyclusId {vlucht_cyclus_id}")
+                 raise ValueError(f"Invalid VluchtCyclusId: {vlucht_cyclus_id} does not exist.")
+            logger.error(f"Error creating verslag with data {verslag_data}: {e}")
+            raise
 
 
     @staticmethod
-    def update_verslag(verslag_id: int, **kwargs) -> Dict:
-        """Update an existing report"""
-        # Ensure 'VluchtCyclusId' key is correctly handled if passed in kwargs
-        # No special handling needed if kwargs contains 'VluchtCyclusId': int or None
-        response = supabase.table("Verslag").update(kwargs).eq("Id", verslag_id).execute()
-        # Check for API errors during update
-        if response.data:
-            return response.data[0]
-        elif hasattr(response, 'error') and response.error:
-             print(f"Supabase update error: {response.error.message}")
-             return None # Or raise
-        else:
-             print("Unexpected response from Supabase during update")
-             return None
+    def update_verslag(verslag_id: int, **kwargs) -> Optional[Dict]:
+        """Update an existing report. Expects kwargs with DB column names."""
+        if not kwargs: return None
+
+        if 'onderwerp' in kwargs and (not kwargs['onderwerp'] or not str(kwargs['onderwerp']).strip()):
+            raise ValueError("Onderwerp cannot be empty")
+        if 'inhoud' in kwargs and (not kwargs['inhoud'] or not str(kwargs['inhoud']).strip()):
+            raise ValueError("Inhoud cannot be empty")
+        # Type checks for booleans are done in app.py
+
+        # Ensure VluchtCyclusId=None is handled correctly if passed
+        if "VluchtCyclusId" in kwargs and kwargs["VluchtCyclusId"] is None:
+            # Supabase client should handle setting NULL correctly
+            pass
+
+        try:
+            response = supabase.table(VerslagHelper.TABLE_NAME).update(kwargs).eq("Id", verslag_id).execute()
+            if response.data:
+                return response.data[0]
+            else:
+                existing = VerslagHelper.get_verslag_by_id(verslag_id)
+                if not existing: return None # Not found
+                if hasattr(response, 'error') and response.error:
+                    logger.error(f"Supabase update verslag {verslag_id} error: {response.error.message}")
+                    if "foreign key constraint" in response.error.message and "Verslag_VluchtCyclusId_fkey" in response.error.message:
+                         raise ValueError(f"Invalid VluchtCyclusId provided in update.")
+                else:
+                    logger.error(f"Supabase update verslag {verslag_id} failed.")
+                return None
+        except Exception as e:
+            if "violates foreign key constraint" in str(e) and "Verslag_VluchtCyclusId_fkey" in str(e):
+                 logger.warning(f"Update verslag {verslag_id} failed due to invalid VluchtCyclusId in data {kwargs}")
+                 raise ValueError(f"Invalid VluchtCyclusId provided in update.")
+            logger.error(f"Error updating verslag {verslag_id} with data {kwargs}: {e}")
+            raise
 
     @staticmethod
     def delete_verslag(verslag_id: int) -> bool:
         """Delete a report"""
-        response = supabase.table("Verslag").delete().eq("Id", verslag_id).execute()
-        # Deletion success is often indicated by count or lack of error,
-        # response.data might be empty on success for delete. Check API docs.
-        # Assuming success if no error and potentially data is list of deleted items
-        if hasattr(response, 'error') and response.error:
-             print(f"Supabase delete error: {response.error.message}")
-             return False
-        # Check if data indicates success (e.g., non-empty list of deleted items)
-        # This might vary based on Supabase client version/settings
-        return isinstance(response.data, list) # Basic check, adjust as needed
+        try:
+            existing = VerslagHelper.get_verslag_by_id(verslag_id)
+            if not existing: return False
+
+            response = supabase.table(VerslagHelper.TABLE_NAME).delete().eq("Id", verslag_id).execute()
+            if hasattr(response, 'error') and response.error:
+                logger.error(f"Supabase delete verslag {verslag_id} error: {response.error.message}")
+                raise Exception(f"Supabase delete verslag error: {response.error.message}")
+            # Note: VluchtCyclus referencing this Verslag should NOT block deletion
+            # because VluchtCyclus.VerslagId FK has no ON DELETE specified (defaults to NO ACTION/RESTRICT)
+            # Oh wait, the VluchtCyclus->Verslag FK *doesn't* have ON DELETE specified.
+            # But Verslag->VluchtCyclus *does* (ON DELETE SET NULL). This helper deletes a Verslag.
+            # Deleting a Verslag should SET NULL in the referencing VluchtCyclus row(s).
+            # If VluchtCyclus referenced Verslag (it doesn't), then deleting Verslag would be restricted.
+            return True
+        except Exception as e:
+            # If deletion is blocked unexpectedly
+            if "violates foreign key constraint" in str(e):
+                 logger.error(f"Cannot delete Verslag {verslag_id} due to unexpected FK constraint.")
+                 raise ValueError(f"Cannot delete Verslag {verslag_id} due to related records.") # 409?
+            logger.error(f"Error deleting verslag {verslag_id}: {e}")
+            raise
