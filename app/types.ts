@@ -20,7 +20,22 @@ export interface Drone {
 }
 
 // Add other types as needed (Event, Zone, etc.)
-// Renamed from Evenement and using camelCase fields
+export interface Evenement {
+  Id: number;
+  StartDatum: string; // Dates are strings in JSON
+  EindDatum: string;
+  StartTijd: string;  // Times are strings in JSON
+  Tijdsduur: string;
+  Naam: string;
+}
+
+export interface Zone {
+  Id: string;         
+  name: string;       
+  type: 'RESTRICTED' | 'NO_FLY' | 'LANDING' | 'OPERATIONAL';  // Type zone
+  status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
+}
+
 export interface Event {
   id: number;
   naam: string;
