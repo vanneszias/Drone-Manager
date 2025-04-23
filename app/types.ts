@@ -30,19 +30,19 @@ export interface Evenement {
 }
 
 export interface Zone {
-  Id: string;         
-  name: string;       
-  type: 'RESTRICTED' | 'NO_FLY' | 'LANDING' | 'OPERATIONAL';  // Type zone
+  Id: string;
+  name: string;
+  type: 'RESTRICTED' | 'NO_FLY' | 'LANDING' | 'OPERATIONAL';
   status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
 }
 
 export interface Event {
-  id: number;
-  naam: string;
-  start_datum: string; // Store as YYYY-MM-DD string
-  eind_datum: string;  // Store as YYYY-MM-DD string
-  start_tijd: string;  // Store as HH:MM or HH:MM:SS string
-  tijdsduur: string; // Store as HH:MM or HH:MM:SS string
+  Id: number;
+  Naam: string;
+  StartDatum: string;
+  EindDatum: string;
+  StartTijd: string;
+  Tijdsduur: string;
 }
 
 export interface Verslag {

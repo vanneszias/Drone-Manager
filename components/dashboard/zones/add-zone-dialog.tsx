@@ -25,42 +25,76 @@ import { PlusCircle } from 'lucide-react';
 import useZones from '@/hooks/useZones';
 
 // Basic type for form data
-type ZoneFormData = {
-  name: string;
-  type: Zone['type'];
-  status: Zone['status'];
-  // Andere velden die je nodig hebt voor een zone
-};
+interface ZoneFormData {
+  naam: string;
+  breedte: number | string; // Use string initially for input, convert later
+  lengte: number | string;  // Use string initially for input, convert later
+  evenement_id: number | string; // Use string initially for input, convert later
+}
 
-export function AddZoneDialog() {
+// Type for data sent to API (matching backend expectations AFTER fix)
+interface ZoneApiInput {
+   naam: string;
+   breedte: number;
+   lengte: number;
+   evenement_id: number;
+}
+
+export function AddZoneDialog() { // Consider accepting eventId as a prop: { eventId }: { eventId?: number }
   const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState<Partial<ZoneFormData>>({
-    name: '',
-    type: 'RESTRICTED', // Default type
-    status: 'ACTIVE',    // Default status
+  const [formData, setFormData] = useState<ZoneFormData>({
+    naam: '',
+    breedte: '',
+    lengte: '',
+    evenement_id: '', // Or pre-fill if eventId prop is passed
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
+    const { id, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [id]: value,
+      [id]: value, // Keep as string from input for now
     }));
-  };
-
-  const handleTypeChange = (value: Zone['type']) => {
-    setFormData(prev => ({ ...prev, type: value }));
-  };
-
-  const handleStatusChange = (value: Zone['status']) => {
-    setFormData(prev => ({ ...prev, status: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    useZones.handleAddZone(formData as Zone, setIsLoading, setError, setIsOpen, setFormData);
+    setError(null);
+
+    // --- Data Conversion and Validation ---
+    const breedteNum = parseFloat(formData.breedte.toString());
+    const lengteNum = parseFloat(formData.lengte.toString());
+    const evenementIdNum = parseInt(formData.evenement_id.toString(), 10);
+
+    if (!formData.naam) {
+        setError("Zone name is required.");
+        return;
+    }
+    if (isNaN(breedteNum) || breedteNum <= 0) {
+        setError("Please enter a valid positive number for Width.");
+        return;
+    }
+     if (isNaN(lengteNum) || lengteNum <= 0) {
+        setError("Please enter a valid positive number for Length.");
+        return;
+    }
+    if (isNaN(evenementIdNum) || evenementIdNum <= 0) {
+         // TODO: Add better validation/selection for Event ID
+        setError("Please enter a valid Event ID.");
+        return;
+    }
+
+    const apiData: ZoneApiInput = {
+        naam: formData.naam,
+        breedte: breedteNum,
+        lengte: lengteNum,
+        evenement_id: evenementIdNum,
+    };
+
+    // Call the hook with the correctly structured data
+    useZones.handleAddZone(apiData, setIsLoading, setError, setIsOpen, () => setFormData({ naam: '', breedte: '', lengte: '', evenement_id: '' }));
   };
 
   return (
@@ -79,38 +113,27 @@ export function AddZoneDialog() {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
+            {/* Name */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">Name</Label>
-              <Input id="name" value={formData.name || ''} onChange={handleInputChange} className="col-span-3" required />
+              <Label htmlFor="naam" className="text-right">Name</Label>
+              <Input id="naam" value={formData.naam} onChange={handleInputChange} className="col-span-3" required />
             </div>
+             {/* Breedte (Width) */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="type" className="text-right">Type</Label>
-              <Select onValueChange={handleTypeChange} defaultValue={formData.type}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="RESTRICTED">Restricted</SelectItem>
-                  <SelectItem value="NO_FLY">No Fly</SelectItem>
-                  <SelectItem value="LANDING">Landing</SelectItem>
-                  <SelectItem value="OPERATIONAL">Operational</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="breedte" className="text-right">Width</Label>
+              <Input id="breedte" type="number" value={formData.breedte} onChange={handleInputChange} className="col-span-3" required step="any" min="0.01"/>
             </div>
+             {/* Lengte (Length) */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">Status</Label>
-              <Select onValueChange={handleStatusChange} defaultValue={formData.status}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
-                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="lengte" className="text-right">Length</Label>
+              <Input id="lengte" type="number" value={formData.lengte} onChange={handleInputChange} className="col-span-3" required step="any" min="0.01"/>
             </div>
-            {/* Voeg hier eventuele andere velden toe die je nodig hebt voor je zone */}
+             {/* Evenement ID (Event ID) - NEEDS BETTER UX (e.g., Dropdown) */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="evenement_id" className="text-right">Event ID</Label>
+              <Input id="evenement_id" type="number" value={formData.evenement_id} onChange={handleInputChange} className="col-span-3" required min="1"/>
+              {/* TODO: Replace this with a Select dropdown populated from /api/events */}
+            </div>
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
           <DialogFooter>

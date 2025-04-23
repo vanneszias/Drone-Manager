@@ -8,10 +8,10 @@ async function getDrones(): Promise<Drone[]> {
 
   try {
     const res = await fetch(apiUrl, {
-        cache: 'no-store', // Disable caching for dynamic data
-        headers: {
-            'Accept': 'application/json',
-        }
+      cache: 'no-store', // Disable caching for dynamic data
+      headers: {
+        'Accept': 'application/json',
+      }
     });
 
     console.log(`Fetch response status from ${apiUrl}: ${res.status}`); // Log status
@@ -27,10 +27,10 @@ async function getDrones(): Promise<Drone[]> {
     // Verify Content-Type before parsing
     const contentType = res.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
-       const responseText = await res.text(); // Get body if not JSON
-       console.error(`Expected JSON but received ${contentType} from ${apiUrl}`);
-       console.error(`Response body: ${responseText.substring(0, 500)}...`);
-       throw new Error(`API route ${apiUrl} did not return JSON. Received: ${contentType}`);
+      const responseText = await res.text(); // Get body if not JSON
+      console.error(`Expected JSON but received ${contentType} from ${apiUrl}`);
+      console.error(`Response body: ${responseText.substring(0, 500)}...`);
+      throw new Error(`API route ${apiUrl} did not return JSON. Received: ${contentType}`);
     }
 
     const data = await res.json();
@@ -45,73 +45,73 @@ async function getDrones(): Promise<Drone[]> {
 }
 
 const handleDelete = async (id: number) => {
-      if (!confirm(`Are you sure you want to delete drone ${id}?`)) return;
-      try {
-          const res = await fetch(`/api/drones/${id}`, { method: 'DELETE' });
-          if (res.ok) {
-              alert('Drone deleted successfully');
-              // TODO: Refresh data - Need a better way, e.g., router.refresh() or state management
-              window.location.reload(); // Simple but not ideal
-          } else {
-              const errorData = await res.json();
-              alert(`Failed to delete drone: ${errorData.error || res.statusText}`);
-          }
-      } catch (error) {
-          console.error("Error deleting drone:", error);
-          alert("An error occurred while deleting the drone.");
-      }
+  if (!confirm(`Are you sure you want to delete drone ${id}?`)) return;
+  try {
+    const res = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      alert('Drone deleted successfully');
+      // TODO: Refresh data - Need a better way, e.g., router.refresh() or state management
+      window.location.reload(); // Simple but not ideal
+    } else {
+      const errorData = await res.json();
+      alert(`Failed to delete drone: ${errorData.error || res.statusText}`);
+    }
+  } catch (error) {
+    console.error("Error deleting drone:", error);
+    alert("An error occurred while deleting the drone.");
+  }
 };
 
 const handleAddDrone = async (formData: Drone, setIsLoading: (isLoading: boolean) => void, setError: (error: string | null) => void, setIsOpen: (isOpen: boolean) => void, setFormData: (formData: Drone) => void) => {
-    setIsLoading(true);
-    setError(null);
+  setIsLoading(true);
+  setError(null);
 
-    // Basic validation
-    if (formData.batterij === undefined || formData.batterij < 0 || formData.batterij > 100) {
-        setError("Battery must be between 0 and 100.");
-        setIsLoading(false);
-        return;
-    }
-    if (!formData.status) {
-        setError("Status is required.");
-        setIsLoading(false);
-        return;
-    }
+  // Basic validation
+  if (formData.batterij === undefined || formData.batterij < 0 || formData.batterij > 100) {
+    setError("Battery must be between 0 and 100.");
+    setIsLoading(false);
+    return;
+  }
+  if (!formData.status) {
+    setError("Status is required.");
+    setIsLoading(false);
+    return;
+  }
 
-    // Prepare data for API (match expected fields in api/app.py create_drone)
-    const apiData = {
-        status: formData.status,
-        batterij: formData.batterij, // API expects 'batterij'
-        magOpstijgen: formData.magOpstijgen, // API expects 'magOpstijgen'
-    };
-
-
-    try {
-      const response = await fetch('/api/drones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
-      // Success
-      setIsOpen(false); // Close dialog
-      setFormData({ status: 'OFFLINE', magOpstijgen: false, batterij: 0 , id: 0 }); // Reset form
-      alert('Drone added successfully!');
-      // TODO: Ideally refresh data without full page reload
-       window.location.reload(); // Simple refresh
-    } catch (err: any) {
-      setError(err.message || "An unknown error occurred.");
-      console.error("Error adding drone:", err);
-    } finally {
-      setIsLoading(false);
-    }
+  // Prepare data for API (match expected fields in api/app.py create_drone)
+  const apiData = {
+    status: formData.status,
+    batterij: formData.batterij, // API expects 'batterij'
+    magOpstijgen: formData.magOpstijgen, // API expects 'magOpstijgen'
   };
-  
+
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(apiData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    // Success
+    setIsOpen(false); // Close dialog
+    setFormData({ status: 'OFFLINE', magOpstijgen: false, batterij: 0, id: 0 }); // Reset form
+    alert('Drone added successfully!');
+    // TODO: Ideally refresh data without full page reload
+    window.location.reload(); // Simple refresh
+  } catch (err: any) {
+    setError(err.message || "An unknown error occurred.");
+    console.error("Error adding drone:", err);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 // Helper to get badge color based on status
 const getStatusBadgeVariant = (status: Drone['status']): string => {
   switch (status) {
@@ -130,9 +130,9 @@ const getStatusBadgeVariant = (status: Drone['status']): string => {
 
 // Helper to get battery color
 const getBatteryColor = (level: number): string => {
-    if (level > 70) return 'text-green-600';
-    if (level > 30) return 'text-yellow-600';
-    return 'text-red-600';
+  if (level > 70) return 'text-green-600';
+  if (level > 30) return 'text-yellow-600';
+  return 'text-red-600';
 }
 
 export default { getDrones, handleDelete, getStatusBadgeVariant, getBatteryColor, handleAddDrone };
