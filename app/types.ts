@@ -36,6 +36,13 @@ export interface Zone {
   status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
 }
 
+export interface Startplaats {
+  id: number;
+  naam: string;
+  locatie: string;
+  isBeschikbaar: boolean; // Indicates if the startplaats is available
+}
+
 // Define and export the Docking type
 export interface Docking {
   id: number;
