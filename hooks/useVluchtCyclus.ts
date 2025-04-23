@@ -97,4 +97,4 @@ const handleAddVluchtCyclus = async (
     }
 }
 
-export { handleDelete, handleAddVluchtCyclus, getVluchtCycli };
+export default { handleDelete, handleAddVluchtCyclus, getVluchtCycli };

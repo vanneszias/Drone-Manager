@@ -12,25 +12,25 @@ export default function VluchtCyclusPage() {
   const [vluchtcyclussen, setVluchtcyclussen] = useState<VluchtCyclus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { getVluchtCyclussen } = useVluchtCyclus;
+  const { getVluchtCycli } = useVluchtCyclus;
 
   useEffect(() => {
-    const loadVluchtCyclussen = async () => {
+    const loadVluchtCycli = async () => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getVluchtCyclussen();
+        const data = await getVluchtCycli();
         setVluchtcyclussen(data);
       } catch (err) {
-        console.error('Error in loadVluchtCyclussen:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load vluchtcyclussen');
+        console.error('Error in loadVluchtCycli:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load vluchtcycli');
       } finally {
         setLoading(false);
       }
     };
 
-    loadVluchtCyclussen();
-  }, [getVluchtCyclussen]);
+    loadVluchtCycli();
+  }, [getVluchtCycli]);
 
   if (loading) {
     return (
@@ -49,8 +49,8 @@ export default function VluchtCyclusPage() {
         <div className="text-center">
           <p className="text-destructive font-semibold">Error loading vluchtcyclussen</p>
           <p className="text-sm text-muted-foreground mt-2">{error}</p>
-          <Button 
-            onClick={() => window.location.reload()} 
+          <Button
+            onClick={() => window.location.reload()}
             className="mt-4"
             variant="outline"
           >
@@ -76,7 +76,7 @@ export default function VluchtCyclusPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <VluchtCyclusList vluchtcyclussen={vluchtcyclussen} />
+          <VluchtCyclusList vluchtCycli={vluchtcyclussen} />
         </CardContent>
       </Card>
     </div>

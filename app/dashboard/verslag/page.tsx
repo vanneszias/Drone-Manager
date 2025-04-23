@@ -49,8 +49,8 @@ export default function VerslagPage() {
         <div className="text-center">
           <p className="text-destructive font-semibold">Error loading verslagen</p>
           <p className="text-sm text-muted-foreground mt-2">{error}</p>
-          <Button 
-            onClick={() => window.location.reload()} 
+          <Button
+            onClick={() => window.location.reload()}
             className="mt-4"
             variant="outline"
           >
