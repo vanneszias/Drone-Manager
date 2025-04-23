@@ -2,7 +2,10 @@ from flask import Flask, request, jsonify
 from datetime import date, time
 import os
 import traceback
+import logging
 from dotenv import load_dotenv
+
+from .config import supabase
 
 # Import all helper classes
 from .helpers import (
@@ -11,11 +14,13 @@ from .helpers import (
     StartplaatsHelper,
     VerslagHelper,
     DroneHelper,
-    DockingHelper, # Import DockingHelper if needed
+    DockingHelper,
     CyclusHelper,
     VluchtCyclusHelper,
     DockingCyclusHelper
 )
+# Import Supabase client directly ONLY IF needed for complex queries not in helpers
+# from .config import supabase
 
 # Load environment variables
 load_dotenv()
@@ -23,11 +28,40 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
+# Use Flask's logger instance
+app.logger.setLevel(logging.INFO)
+if os.environ.get('FLASK_DEBUG', 'False').lower() == 'true':
+    app.logger.setLevel(logging.DEBUG)
+
+
 # --- Helper Function for Parsing Boolean Query Params ---
 def str_to_bool(s):
     if s is None:
         return None
     return s.lower() in ['true', '1', 't', 'y', 'yes']
+
+# --- Helper for Handling Exceptions ---
+def handle_error(e, message, status_code=500):
+    """Logs error and returns JSON response."""
+    # Log the full traceback for debugging server-side
+    app.logger.error(f"{message}: {e}\n{traceback.format_exc()}")
+    # Return a user-friendly error message
+    user_error_message = message
+    # Customize user message for specific errors if needed
+    if isinstance(e, ValueError):
+         user_error_message = str(e) # Use the specific message from ValueError
+         status_code = 400 # Bad Request for validation errors
+    elif "violates foreign key constraint" in str(e):
+        # More specific handling for FK errors could be added here if not caught earlier
+        user_error_message = "Invalid reference ID provided."
+        status_code = 400 # Bad Request
+    elif "unique constraint" in str(e):
+        user_error_message = "A record with the same unique identifier already exists."
+        status_code = 409 # Conflict
+
+    return jsonify({"error": user_error_message}), status_code
 
 # --- Evenement Routes ---
 @app.route('/api/events', methods=['GET'])
@@ -36,8 +70,7 @@ def get_events():
         events = EvenementHelper.get_all_events()
         return jsonify(events)
     except Exception as e:
-        app.logger.error(f"Error getting events: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, "Failed to retrieve events")
 
 @app.route('/api/events/<int:event_id>', methods=['GET'])
 def get_event(event_id):
@@ -47,59 +80,65 @@ def get_event(event_id):
             return jsonify(event)
         return jsonify({"error": "Event not found"}), 404
     except Exception as e:
-        app.logger.error(f"Error getting event {event_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+         return handle_error(e, f"Failed to retrieve event {event_id}")
 
 @app.route('/api/events', methods=['POST'])
 def create_event():
     data = request.get_json()
-    app.logger.info(f"Received POST /api/events request data: {data}")
+    app.logger.info(f"POST /api/events data: {data}")
 
     if not data:
-        app.logger.warning("No data received for POST /api/events")
         return jsonify({"error": "No input data provided"}), 400
 
+    # Expect snake_case keys from JSON
     required_keys = ['start_datum', 'eind_datum', 'start_tijd', 'tijdsduur', 'naam']
-    missing_keys = [key for key in required_keys if key not in data]
+    missing_keys = [key for key in required_keys if key not in data or data[key] is None]
     if missing_keys:
-        error_msg = f"Missing required fields: {', '.join(missing_keys)}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return jsonify({"error": f"Missing required fields: {', '.join(missing_keys)}"}), 400
 
     try:
+        # Validate and convert data types
+        start_datum_obj = date.fromisoformat(data['start_datum'])
+        eind_datum_obj = date.fromisoformat(data['eind_datum'])
+        start_tijd_obj = time.fromisoformat(data['start_tijd'])
+        tijdsduur_obj = time.fromisoformat(data['tijdsduur']) # Ensure TIME is correct for duration
+        naam_str = str(data['naam']).strip()
+
+        if not naam_str:
+            raise ValueError("Event name cannot be empty")
+        if eind_datum_obj < start_datum_obj:
+             raise ValueError("End date cannot be before start date")
+
+        # Call helper with correct Python types/validated data
         event = EvenementHelper.create_event(
-            start_datum=date.fromisoformat(data['start_datum']),
-            eind_datum=date.fromisoformat(data['eind_datum']),
-            start_tijd=time.fromisoformat(data['start_tijd']),
-            tijdsduur=time.fromisoformat(data['tijdsduur']),
-            naam=data['naam']
+            start_datum=start_datum_obj,
+            eind_datum=eind_datum_obj,
+            start_tijd=start_tijd_obj,
+            tijdsduur=tijdsduur_obj,
+            naam=naam_str
         )
         if event:
-            app.logger.info(f"Event created successfully: {event}")
+            app.logger.info(f"Event created successfully: {event.get('Id')}")
             return jsonify(event), 201
         else:
-             app.logger.error("EvenementHelper.create_event returned None")
+             # Helper should raise error or return None if creation fails; handle potential None case
+             app.logger.error("EvenementHelper.create_event returned None unexpectedly.")
              return jsonify({"error": "Failed to create event in database"}), 500
-    except (ValueError, TypeError) as ve: # Catch format/type errors
-        error_msg = f"Invalid date, time, or data type: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+    except (ValueError, TypeError) as ve:
+        return handle_error(ve, "Invalid data provided", 400)
     except KeyError as ke:
-        error_msg = f"Missing required field: {ke}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return handle_error(ke, f"Missing field: {ke}", 400)
     except Exception as e:
-        app.logger.error(f"Error creating event: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, "Error creating event")
 
 @app.route('/api/events/<int:event_id>', methods=['PUT'])
 def update_event(event_id):
     data = request.get_json()
-    app.logger.info(f"Received PUT /api/events/{event_id} request data: {data}")
+    app.logger.info(f"PUT /api/events/{event_id} data: {data}")
     if not data:
         return jsonify({"error": "No input data provided"}), 400
 
-    update_data = {}
+    update_data = {} # Use PascalCase keys for direct use in helper's kwargs
     try:
         if 'start_datum' in data:
             update_data['StartDatum'] = date.fromisoformat(data['start_datum']).isoformat()
@@ -110,57 +149,69 @@ def update_event(event_id):
         if 'tijdsduur' in data:
             update_data['Tijdsduur'] = time.fromisoformat(data['tijdsduur']).isoformat()
         if 'naam' in data:
-            update_data['Naam'] = data['naam']
+            naam_str = str(data['naam']).strip()
+            if not naam_str: raise ValueError("Event name cannot be empty")
+            update_data['Naam'] = naam_str
+
+        # Add cross-field validation if necessary (e.g., check dates after conversion)
+        if 'StartDatum' in update_data and 'EindDatum' in update_data:
+             if date.fromisoformat(update_data['EindDatum']) < date.fromisoformat(update_data['StartDatum']):
+                 raise ValueError("End date cannot be before start date")
+        # Check against existing data if only one date is provided? (More complex logic)
 
         if not update_data:
              return jsonify({"error": "No valid fields provided for update"}), 400
 
-        # Call helper with explicit DB column names (or ensure helper handles conversion)
         event = EvenementHelper.update_event(event_id=event_id, **update_data)
 
         if event:
-            app.logger.info(f"Event {event_id} updated successfully: {event}")
+            app.logger.info(f"Event {event_id} updated successfully.")
             return jsonify(event)
         else:
-            return jsonify({"error": "Event not found or update failed"}), 404
+            # Helper returns None if event not found or update failed without raising error
+            # Check if event exists to differentiate 404 from other errors
+            existing = EvenementHelper.get_event_by_id(event_id)
+            if existing:
+                app.logger.error(f"Update failed for existing event {event_id}, helper returned None.")
+                return jsonify({"error": "Event update failed"}), 500 # Or 400 if validation failed in helper
+            else:
+                 return jsonify({"error": "Event not found"}), 404
     except (ValueError, TypeError) as ve:
-        error_msg = f"Invalid date, time, or data type for update: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return handle_error(ve, "Invalid data provided for update", 400)
     except Exception as e:
-        app.logger.error(f"Error updating event {event_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Error updating event {event_id}")
 
 @app.route('/api/events/<int:event_id>', methods=['DELETE'])
 def delete_event(event_id):
-    app.logger.info(f"Received DELETE /api/events/{event_id} request")
+    app.logger.info(f"DELETE /api/events/{event_id}")
     try:
         success = EvenementHelper.delete_event(event_id)
         if success:
             app.logger.info(f"Event {event_id} deleted successfully")
-            return '', 204 # Standard practice for DELETE success
+            return '', 204 # No Content
         else:
+            # Helper returns False if event didn't exist
             return jsonify({"error": "Event not found"}), 404
     except Exception as e:
-        app.logger.error(f"Error deleting event {event_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        # ON DELETE CASCADE should handle Zone deletion. If other FKs block it, handle error.
+         return handle_error(e, f"Error deleting event {event_id}")
 
 # --- Zone Routes ---
 @app.route('/api/zones', methods=['GET'])
 def get_zones():
     try:
-        # Correct: Filter by EvenementId if provided
-        event_id = request.args.get('event_id')
-        if event_id:
-            zones = ZoneHelper.get_zones_by_event(int(event_id))
+        event_id_str = request.args.get('event_id')
+        if event_id_str:
+            try:
+                event_id = int(event_id_str)
+                zones = ZoneHelper.get_zones_by_event(event_id)
+            except ValueError:
+                 return jsonify({"error": "Invalid event_id parameter"}), 400
         else:
             zones = ZoneHelper.get_all_zones()
         return jsonify(zones)
-    except ValueError:
-         return jsonify({"error": "Invalid event_id provided"}), 400
     except Exception as e:
-        app.logger.error(f"Error getting zones: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, "Failed to retrieve zones")
 
 @app.route('/api/zones/<int:zone_id>', methods=['GET'])
 def get_zone(zone_id):
@@ -170,84 +221,75 @@ def get_zone(zone_id):
             return jsonify(zone)
         return jsonify({"error": "Zone not found"}), 404
     except Exception as e:
-        app.logger.error(f"Error getting zone {zone_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Failed to retrieve zone {zone_id}")
 
 @app.route('/api/zones', methods=['POST'])
 def create_zone():
     data = request.get_json()
-    app.logger.info(f"Received POST /api/zones request data: {data}")
+    app.logger.info(f"POST /api/zones data: {data}")
+    if not data: return jsonify({"error": "No input data provided"}), 400
 
-    if not data:
-         app.logger.warning("No data received for POST /api/zones")
-         return jsonify({"error": "No input data provided"}), 400
-
-    # Correct: Keys based on DB schema
     required_keys = ['naam', 'breedte', 'lengte', 'evenement_id']
-    missing_keys = [key for key in required_keys if key not in data]
+    missing_keys = [key for key in required_keys if key not in data or data[key] is None]
     if missing_keys:
-        error_msg = f"Missing required fields: {', '.join(missing_keys)}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return jsonify({"error": f"Missing required fields: {', '.join(missing_keys)}"}), 400
 
     try:
+        naam_str = str(data['naam']).strip()
         breedte_val = float(data['breedte'])
         lengte_val = float(data['lengte'])
         evenement_id_val = int(data['evenement_id'])
-        naam_val = str(data['naam'])
 
-        if breedte_val <= 0 or lengte_val <= 0:
-            raise ValueError("Width (breedte) and Length (lengte) must be positive numbers.")
-        if not naam_val.strip():
-             raise ValueError("Zone name (naam) cannot be empty.")
+        # Validation moved to helper, but can double-check here
+        if not naam_str: raise ValueError("Zone name cannot be empty")
+        if breedte_val <= 0 or lengte_val <= 0: raise ValueError("Width and Length must be positive")
 
-        # Correct: Call helper with DB fields
+        # Call helper with validated data
         zone = ZoneHelper.create_zone(
             breedte=breedte_val,
             lengte=lengte_val,
-            naam=naam_val,
-            evenement_id=evenement_id_val
+            naam=naam_str,
+            evenement_id=evenement_id_val # Helper maps this to 'EvenementId'
         )
 
         if zone:
-            app.logger.info(f"Zone created successfully: {zone}")
+            app.logger.info(f"Zone created successfully: {zone.get('Id')}")
             return jsonify(zone), 201
         else:
-             app.logger.error("ZoneHelper.create_zone returned None")
-             return jsonify({"error": "Failed to create zone in database"}), 500
+             # Helper might return None if FK violation or other DB issue not raising Exception
+             app.logger.error("ZoneHelper.create_zone returned None unexpectedly.")
+             return jsonify({"error": "Failed to create zone (check EvenementId existence?)"}), 500
 
-    except (KeyError, ValueError, TypeError) as e: # Catch specific data errors
-        error_msg = f"Invalid or missing zone data: {e}"
-        app.logger.error(f"{error_msg}\n{traceback.format_exc()}")
-        return jsonify({"error": error_msg}), 400
+    except (ValueError, TypeError) as ve:
+        return handle_error(ve, "Invalid data provided for zone", 400)
+    except KeyError as ke:
+        return handle_error(ke, f"Missing field: {ke}", 400)
     except Exception as e:
-        app.logger.error(f"Error creating zone: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, "Error creating zone")
 
 @app.route('/api/zones/<int:zone_id>', methods=['PUT'])
 def update_zone(zone_id):
     data = request.get_json()
-    app.logger.info(f"Received PUT /api/zones/{zone_id} request data: {data}")
-    if not data:
-        return jsonify({"error": "No input data provided"}), 400
+    app.logger.info(f"PUT /api/zones/{zone_id} data: {data}")
+    if not data: return jsonify({"error": "No input data provided"}), 400
 
-    update_data = {}
+    update_data = {} # Use PascalCase keys for helper
     try:
-        # Correct: Update based on DB fields
         if 'naam' in data:
-            update_data['naam'] = str(data['naam'])
-            if not update_data['naam'].strip():
-                 raise ValueError("Zone name (naam) cannot be empty.")
+            naam_str = str(data['naam']).strip()
+            if not naam_str: raise ValueError("Zone name cannot be empty")
+            update_data['naam'] = naam_str
         if 'breedte' in data:
-            update_data['breedte'] = float(data['breedte'])
-            if update_data['breedte'] <= 0:
-                raise ValueError("Width (breedte) must be positive.")
+            breedte_val = float(data['breedte'])
+            if breedte_val <= 0: raise ValueError("Width (breedte) must be positive")
+            update_data['breedte'] = breedte_val
         if 'lengte' in data:
-            update_data['lengte'] = float(data['lengte'])
-            if update_data['lengte'] <= 0:
-                raise ValueError("Length (lengte) must be positive.")
+            lengte_val = float(data['lengte'])
+            if lengte_val <= 0: raise ValueError("Length (lengte) must be positive")
+            update_data['lengte'] = lengte_val
         if 'evenement_id' in data:
-            update_data['EvenementId'] = int(data['evenement_id']) # Match DB column casing if helper expects kwargs directly
+            # Ensure EvenementId is passed with PascalCase if helper expects it directly in kwargs
+            update_data['EvenementId'] = int(data['evenement_id'])
 
         if not update_data:
              return jsonify({"error": "No valid fields provided for update"}), 400
@@ -255,21 +297,24 @@ def update_zone(zone_id):
         zone = ZoneHelper.update_zone(zone_id=zone_id, **update_data)
 
         if zone:
-            app.logger.info(f"Zone {zone_id} updated successfully: {zone}")
+            app.logger.info(f"Zone {zone_id} updated successfully.")
             return jsonify(zone)
         else:
-            return jsonify({"error": "Zone not found or update failed"}), 404
+             # Helper returns None if not found or failed update
+             existing = ZoneHelper.get_zone_by_id(zone_id)
+             if existing:
+                 app.logger.error(f"Update failed for existing zone {zone_id}.")
+                 return jsonify({"error": "Zone update failed (check EvenementId?)"}), 500
+             else:
+                 return jsonify({"error": "Zone not found"}), 404
     except (ValueError, TypeError) as ve:
-        error_msg = f"Invalid data type for update: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return handle_error(ve, "Invalid data provided for zone update", 400)
     except Exception as e:
-        app.logger.error(f"Error updating zone {zone_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Error updating zone {zone_id}")
 
 @app.route('/api/zones/<int:zone_id>', methods=['DELETE'])
 def delete_zone(zone_id):
-    app.logger.info(f"Received DELETE /api/zones/{zone_id} request")
+    app.logger.info(f"DELETE /api/zones/{zone_id}")
     try:
         success = ZoneHelper.delete_zone(zone_id)
         if success:
@@ -277,31 +322,38 @@ def delete_zone(zone_id):
             return '', 204
         else:
             return jsonify({"error": "Zone not found"}), 404
+    except ValueError as ve: # Catch specific error from helper for FK violation
+        return handle_error(ve, str(ve), 409) # Conflict
     except Exception as e:
-        app.logger.error(f"Error deleting zone {zone_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        # Check if VluchtCyclus.ZoneId blocks deletion (depends on DB settings)
+        return handle_error(e, f"Error deleting zone {zone_id}")
 
-# --- Startplaats Routes (Corrected based on DB Schema) ---
+
+# --- Startplaats Routes ---
 @app.route('/api/startplaatsen', methods=['GET'])
 def get_startplaatsen():
     try:
-        # Correct: No filtering by event_id. Maybe filter by isbeschikbaar?
         is_beschikbaar_str = request.args.get('isbeschikbaar')
-        is_beschikbaar = str_to_bool(is_beschikbaar_str)
+        is_beschikbaar = str_to_bool(is_beschikbaar_str) # Handles None
 
         if is_beschikbaar is True:
              startplaatsen = StartplaatsHelper.get_available_startplaatsen()
         elif is_beschikbaar is False:
-             # Assuming a helper exists or filtering directly
-             response = supabase.table("Startplaats").select("*").eq("isbeschikbaar", False).execute()
-             startplaatsen = response.data
+             # Add helper or filter directly
+             # Assuming helper exists:
+             # startplaatsen = StartplaatsHelper.get_unavailable_startplaatsen()
+             # Direct filter example:
+             try:
+                  response = supabase.table("Startplaats").select("*").eq("isbeschikbaar", False).execute()
+                  startplaatsen = response.data
+             except Exception as db_e:
+                  raise Exception(f"Database error filtering startplaatsen: {db_e}") from db_e
         else:
+             # No filter or invalid value for isbeschikbaar, get all
              startplaatsen = StartplaatsHelper.get_all_startplaatsen()
         return jsonify(startplaatsen)
     except Exception as e:
-        app.logger.error(f"Error getting startplaatsen: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
-
+        return handle_error(e, "Failed to retrieve startplaatsen")
 
 @app.route('/api/startplaatsen/<int:startplaats_id>', methods=['GET'])
 def get_startplaats(startplaats_id):
@@ -311,63 +363,56 @@ def get_startplaats(startplaats_id):
             return jsonify(startplaats)
         return jsonify({"error": "Startplaats not found"}), 404
     except Exception as e:
-        app.logger.error(f"Error getting startplaats {startplaats_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Failed to retrieve startplaats {startplaats_id}")
 
 @app.route('/api/startplaatsen', methods=['POST'])
 def create_startplaats():
     data = request.get_json()
-    app.logger.info(f"Received POST /api/startplaatsen request data: {data}")
-    if not data:
-         return jsonify({"error": "No input data provided"}), 400
+    app.logger.info(f"POST /api/startplaatsen data: {data}")
+    if not data: return jsonify({"error": "No input data provided"}), 400
 
-    # Correct: Expect 'locatie' and optional 'isbeschikbaar'
-    if 'locatie' not in data:
+    if 'locatie' not in data or data['locatie'] is None:
         return jsonify({"error": "Missing required field: locatie"}), 400
 
     try:
-        locatie_val = str(data['locatie'])
-        # Default isbeschikbaar to True if not provided or invalid
+        locatie_str = str(data['locatie']).strip()
+        if not locatie_str: raise ValueError("Location (locatie) cannot be empty.")
+
+        # Get 'isbeschikbaar', default to True if missing or not boolean
         is_beschikbaar_val = data.get('isbeschikbaar', True)
         if not isinstance(is_beschikbaar_val, bool):
-             is_beschikbaar_val = True # Default to True on invalid input
+             app.logger.warning(f"Invalid type for 'isbeschikbaar' in POST /api/startplaatsen, defaulting to True.")
+             is_beschikbaar_val = True
 
-        if not locatie_val.strip():
-             raise ValueError("Location (locatie) cannot be empty.")
-
-        # Correct: Call helper with DB fields
         startplaats = StartplaatsHelper.create_startplaats(
-            locatie=locatie_val,
+            locatie=locatie_str,
             is_beschikbaar=is_beschikbaar_val
         )
         if startplaats:
-            app.logger.info(f"Startplaats created successfully: {startplaats}")
+            app.logger.info(f"Startplaats created successfully: {startplaats.get('Id')}")
             return jsonify(startplaats), 201
         else:
-            app.logger.error("StartplaatsHelper.create_startplaats returned None")
+            app.logger.error("StartplaatsHelper.create_startplaats returned None.")
             return jsonify({"error": "Failed to create startplaats"}), 500
     except (ValueError, TypeError) as ve:
-        error_msg = f"Invalid data for startplaats: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return handle_error(ve, "Invalid data for startplaats", 400)
+    except KeyError as ke:
+         return handle_error(ke, f"Missing field: {ke}", 400)
     except Exception as e:
-        app.logger.error(f"Error creating startplaats: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, "Error creating startplaats")
 
 @app.route('/api/startplaatsen/<int:startplaats_id>', methods=['PUT'])
 def update_startplaats(startplaats_id):
     data = request.get_json()
-    app.logger.info(f"Received PUT /api/startplaatsen/{startplaats_id} request data: {data}")
-    if not data:
-        return jsonify({"error": "No input data provided"}), 400
+    app.logger.info(f"PUT /api/startplaatsen/{startplaats_id} data: {data}")
+    if not data: return jsonify({"error": "No input data provided"}), 400
 
-    update_data = {}
+    update_data = {} # Use DB column names (which match snake_case here)
     try:
-        # Correct: Update based on DB fields
         if 'locatie' in data:
-            update_data['locatie'] = str(data['locatie'])
-            if not update_data['locatie'].strip():
-                raise ValueError("Location (locatie) cannot be empty.")
+            locatie_str = str(data['locatie']).strip()
+            if not locatie_str: raise ValueError("Location (locatie) cannot be empty.")
+            update_data['locatie'] = locatie_str
         if 'isbeschikbaar' in data:
             if not isinstance(data['isbeschikbaar'], bool):
                  raise ValueError("isbeschikbaar must be a boolean (true/false).")
@@ -378,21 +423,23 @@ def update_startplaats(startplaats_id):
 
         startplaats = StartplaatsHelper.update_startplaats(startplaats_id=startplaats_id, **update_data)
         if startplaats:
-             app.logger.info(f"Startplaats {startplaats_id} updated successfully: {startplaats}")
+             app.logger.info(f"Startplaats {startplaats_id} updated successfully.")
              return jsonify(startplaats)
         else:
-            return jsonify({"error": "Startplaats not found or update failed"}), 404
+             existing = StartplaatsHelper.get_startplaats_by_id(startplaats_id)
+             if existing:
+                 app.logger.error(f"Update failed for existing startplaats {startplaats_id}.")
+                 return jsonify({"error": "Startplaats update failed"}), 500
+             else:
+                 return jsonify({"error": "Startplaats not found"}), 404
     except ValueError as ve:
-        error_msg = f"Invalid data type for update: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return handle_error(ve, "Invalid data type for update", 400)
     except Exception as e:
-        app.logger.error(f"Error updating startplaats {startplaats_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Error updating startplaats {startplaats_id}")
 
 @app.route('/api/startplaatsen/<int:startplaats_id>', methods=['DELETE'])
 def delete_startplaats(startplaats_id):
-    app.logger.info(f"Received DELETE /api/startplaatsen/{startplaats_id} request")
+    app.logger.info(f"DELETE /api/startplaatsen/{startplaats_id}")
     try:
         success = StartplaatsHelper.delete_startplaats(startplaats_id)
         if success:
@@ -400,30 +447,50 @@ def delete_startplaats(startplaats_id):
             return '', 204
         else:
             return jsonify({"error": "Startplaats not found"}), 404
+    except ValueError as ve: # Catch specific error from helper for FK violation
+        return handle_error(ve, str(ve), 409) # Conflict
     except Exception as e:
-        app.logger.error(f"Error deleting startplaats {startplaats_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Error deleting startplaats {startplaats_id}")
 
-# --- Verslag Routes (Corrected based on DB Schema) ---
+
+# --- Verslag Routes ---
 @app.route('/api/verslagen', methods=['GET'])
 def get_verslagen():
     try:
-        # Correct: Filter by status, not event_id
         is_verzonden_str = request.args.get('isverzonden')
         is_geaccepteerd_str = request.args.get('isgeaccepteerd')
+        vlucht_cyclus_id_str = request.args.get('vlucht_cyclus_id') # Allow filtering by FK
 
         is_verzonden = str_to_bool(is_verzonden_str)
         is_geaccepteerd = str_to_bool(is_geaccepteerd_str)
+        vlucht_cyclus_id = None
+        if vlucht_cyclus_id_str:
+             try:
+                 vlucht_cyclus_id = int(vlucht_cyclus_id_str)
+             except ValueError:
+                 return jsonify({"error": "Invalid vlucht_cyclus_id parameter"}), 400
 
-        # Use the specific helper if filtering, otherwise get all
-        if is_verzonden is not None or is_geaccepteerd is not None:
-             verslagen = VerslagHelper.get_verslagen_by_status(is_verzonden=is_verzonden, is_geaccepteerd=is_geaccepteerd)
-        else:
-             verslagen = VerslagHelper.get_all_verslagen()
+        # Build query dynamically or use specific helper
+        # Example direct query:
+        try:
+            query = supabase.table("Verslag").select("*")
+            if is_verzonden is not None:
+                 query = query.eq("isverzonden", is_verzonden)
+            if is_geaccepteerd is not None:
+                 query = query.eq("isgeaccepteerd", is_geaccepteerd)
+            if vlucht_cyclus_id is not None:
+                 query = query.eq("VluchtCyclusId", vlucht_cyclus_id)
+            response = query.execute()
+            verslagen = response.data
+        except Exception as db_e:
+             raise Exception(f"Database error filtering verslagen: {db_e}") from db_e
+
+        # Or use helper if it supports combined filtering:
+        # verslagen = VerslagHelper.get_verslagen_filtered(is_verzonden=is_verzonden, ...)
+
         return jsonify(verslagen)
     except Exception as e:
-        app.logger.error(f"Error getting verslagen: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, "Failed to retrieve verslagen")
 
 @app.route('/api/verslagen/<int:verslag_id>', methods=['GET'])
 def get_verslag(verslag_id):
@@ -433,97 +500,93 @@ def get_verslag(verslag_id):
             return jsonify(verslag)
         return jsonify({"error": "Verslag not found"}), 404
     except Exception as e:
-        app.logger.error(f"Error getting verslag {verslag_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Failed to retrieve verslag {verslag_id}")
 
 @app.route('/api/verslagen', methods=['POST'])
 def create_verslag():
     data = request.get_json()
-    app.logger.info(f"Received POST /api/verslagen request data: {data}")
-    if not data:
-         return jsonify({"error": "No input data provided"}), 400
+    app.logger.info(f"POST /api/verslagen data: {data}")
+    if not data: return jsonify({"error": "No input data provided"}), 400
 
     required_keys = ['onderwerp', 'inhoud']
-    missing_keys = [key for key in required_keys if key not in data]
+    missing_keys = [key for key in required_keys if key not in data or data[key] is None]
     if missing_keys:
          return jsonify({"error": f"Missing required fields: {', '.join(missing_keys)}"}), 400
 
     try:
-        onderwerp_val = str(data['onderwerp'])
-        inhoud_val = str(data['inhoud'])
+        onderwerp_str = str(data['onderwerp']).strip()
+        inhoud_str = str(data['inhoud']).strip()
+        if not onderwerp_str: raise ValueError("Onderwerp cannot be empty.")
+        if not inhoud_str: raise ValueError("Inhoud cannot be empty.")
+
         # Default booleans to False if not provided or invalid
         is_verzonden_val = data.get('isverzonden', False)
         if not isinstance(is_verzonden_val, bool): is_verzonden_val = False
         is_geaccepteerd_val = data.get('isgeaccepteerd', False)
         if not isinstance(is_geaccepteerd_val, bool): is_geaccepteerd_val = False
 
-        vlucht_cyclus_id_val = data.get('vlucht_cyclus_id') # Expect snake_case from frontend JSON
+        # Handle optional nullable FK
+        vlucht_cyclus_id_val = data.get('vlucht_cyclus_id') # Expect snake_case
         if vlucht_cyclus_id_val is not None:
             try:
                 vlucht_cyclus_id_val = int(vlucht_cyclus_id_val)
             except (ValueError, TypeError):
-                 return jsonify({"error": "Invalid format for vlucht_cyclus_id, must be an integer or null"}), 400
-
-        if not onderwerp_val.strip() or not inhoud_val.strip():
-             raise ValueError("Onderwerp and Inhoud cannot be empty.")
+                 raise ValueError("Invalid format for vlucht_cyclus_id, must be an integer or null")
 
         verslag = VerslagHelper.create_verslag(
-            onderwerp=onderwerp_val,
-            inhoud=inhoud_val,
-            isverzonden=is_verzonden_val,
-            isgeaccepteerd=is_geaccepteerd_val,
-            vlucht_cyclus_id=vlucht_cyclus_id_val # Pass the new ID
+            onderwerp=onderwerp_str,
+            inhoud=inhoud_str,
+            is_verzonden=is_verzonden_val,
+            is_geaccepteerd=is_geaccepteerd_val,
+            vlucht_cyclus_id=vlucht_cyclus_id_val # Pass the optional ID
         )
         if verslag:
-            app.logger.info(f"Verslag created successfully: {verslag}")
+            app.logger.info(f"Verslag created successfully: {verslag.get('Id')}")
             return jsonify(verslag), 201
         else:
-             # Check if the failure was due to FK constraint (if helper doesn't raise)
-             app.logger.error("VerslagHelper.create_verslag returned None or failed")
-             # You might check DB logs or add specific error handling for FK violations
-             return jsonify({"error": "Failed to create verslag (potentially invalid VluchtCyclusId?)"}), 500
+             # Helper should raise ValueError on FK violation, but handle None just in case
+             app.logger.error("VerslagHelper.create_verslag returned None.")
+             return jsonify({"error": "Failed to create verslag"}), 500
 
     except (ValueError, TypeError) as ve:
-        error_msg = f"Invalid data for verslag: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return handle_error(ve, "Invalid data for verslag", 400)
+    except KeyError as ke:
+         return handle_error(ke, f"Missing field: {ke}", 400)
     except Exception as e:
-         if "violates foreign key constraint" in str(e).lower() and "Verslag_VluchtCyclusId_fkey" in str(e).lower() : # Adjust constraint name if needed
-             error_msg = f"Invalid vlucht_cyclus_id provided: Reference not found."
-             app.logger.warning(error_msg)
-             return jsonify({"error": error_msg}), 400 # Bad Request due to invalid FK
-         app.logger.error(f"Error creating verslag: {e}\n{traceback.format_exc()}")
-         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+         return handle_error(e, "Error creating verslag")
 
 
 @app.route('/api/verslagen/<int:verslag_id>', methods=['PUT'])
 def update_verslag(verslag_id):
     data = request.get_json()
-    app.logger.info(f"Received PUT /api/verslagen/{verslag_id} request data: {data}")
-    if not data:
-        return jsonify({"error": "No input data provided"}), 400
+    app.logger.info(f"PUT /api/verslagen/{verslag_id} data: {data}")
+    if not data: return jsonify({"error": "No input data provided"}), 400
 
-    update_data = {}
+    update_data = {} # Use PascalCase for helper kwargs
     try:
         if 'onderwerp' in data:
-            update_data['onderwerp'] = str(data['onderwerp'])
-            if not update_data['onderwerp'].strip(): raise ValueError("Onderwerp cannot be empty.")
+            onderwerp_str = str(data['onderwerp']).strip()
+            if not onderwerp_str: raise ValueError("Onderwerp cannot be empty.")
+            update_data['onderwerp'] = onderwerp_str
         if 'inhoud' in data:
-            update_data['inhoud'] = str(data['inhoud'])
-            if not update_data['inhoud'].strip(): raise ValueError("Inhoud cannot be empty.")
+            inhoud_str = str(data['inhoud']).strip()
+            if not inhoud_str: raise ValueError("Inhoud cannot be empty.")
+            update_data['inhoud'] = inhoud_str
         if 'isverzonden' in data:
              if not isinstance(data['isverzonden'], bool): raise ValueError("isverzonden must be boolean.")
              update_data['isverzonden'] = data['isverzonden']
         if 'isgeaccepteerd' in data:
              if not isinstance(data['isgeaccepteerd'], bool): raise ValueError("isgeaccepteerd must be boolean.")
              update_data['isgeaccepteerd'] = data['isgeaccepteerd']
-        if 'vlucht_cyclus_id' in data: # Expect snake_case from frontend JSON
+
+        # Handle optional FK update (including setting to NULL)
+        if 'vlucht_cyclus_id' in data: # Expect snake_case from JSON
             vc_id = data['vlucht_cyclus_id']
             if vc_id is None:
-                 update_data['VluchtCyclusId'] = None # Allow unsetting the FK
+                 update_data['VluchtCyclusId'] = None # Pass None to helper
             else:
                  try:
-                      update_data['VluchtCyclusId'] = int(vc_id) # Helper expects PascalCase for kwargs direct update
+                      update_data['VluchtCyclusId'] = int(vc_id) # Pass int to helper
                  except (ValueError, TypeError):
                       raise ValueError("Invalid format for vlucht_cyclus_id, must be an integer or null")
 
@@ -532,176 +595,190 @@ def update_verslag(verslag_id):
 
         verslag = VerslagHelper.update_verslag(verslag_id=verslag_id, **update_data)
         if verslag:
-            app.logger.info(f"Verslag {verslag_id} updated successfully: {verslag}")
+            app.logger.info(f"Verslag {verslag_id} updated successfully.")
             return jsonify(verslag)
         else:
-            # Check if the failure was due to FK constraint
-            app.logger.error(f"VerslagHelper.update_verslag failed for ID {verslag_id}")
-            return jsonify({"error": "Verslag not found or update failed (potentially invalid VluchtCyclusId?)"}), 404 # Or 500
+             existing = VerslagHelper.get_verslag_by_id(verslag_id)
+             if existing:
+                 app.logger.error(f"Update failed for existing verslag {verslag_id}.")
+                 return jsonify({"error": "Verslag update failed (check VluchtCyclusId?)"}), 500
+             else:
+                 return jsonify({"error": "Verslag not found"}), 404
 
-    except ValueError as ve:
-        error_msg = f"Invalid data type for update: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+    except (ValueError, TypeError) as ve:
+        return handle_error(ve, "Invalid data type for update", 400)
     except Exception as e:
-         if "violates foreign key constraint" in str(e).lower() and "Verslag_VluchtCyclusId_fkey" in str(e).lower():
-             error_msg = f"Invalid vlucht_cyclus_id provided for update: Reference not found."
-             app.logger.warning(error_msg)
-             return jsonify({"error": error_msg}), 400
-         app.logger.error(f"Error updating verslag {verslag_id}: {e}\n{traceback.format_exc()}")
-         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+         # Specific FK error check might be needed if helper doesn't raise ValueError
+         return handle_error(e, f"Error updating verslag {verslag_id}")
 
 @app.route('/api/verslagen/<int:verslag_id>', methods=['DELETE'])
 def delete_verslag(verslag_id):
-    app.logger.info(f"Received DELETE /api/verslagen/{verslag_id} request")
+    app.logger.info(f"DELETE /api/verslagen/{verslag_id}")
     try:
+        # Note: Verslag.VluchtCyclusId has ON DELETE SET NULL, so this shouldn't be blocked by VluchtCyclus
         success = VerslagHelper.delete_verslag(verslag_id)
         if success:
             app.logger.info(f"Verslag {verslag_id} deleted successfully")
             return '', 204
         else:
             return jsonify({"error": "Verslag not found"}), 404
+    except ValueError as ve: # Catch specific conflict errors if helper raises them
+        return handle_error(ve, str(ve), 409)
     except Exception as e:
-        app.logger.error(f"Error deleting verslag {verslag_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Error deleting verslag {verslag_id}")
 
-# --- Drone Routes (Verified OK) ---
+# --- Drone Routes (Verified OK - minor validation tweaks) ---
 @app.route('/api/drones', methods=['GET'])
 def get_drones():
-    app.logger.info("Received GET /api/drones request")
     try:
-        drones = DroneHelper.get_all_drones()
-        app.logger.debug(f"Fetched drones data: {drones}")
+        # Optional filtering by status
+        status_filter = request.args.get('status')
+        if status_filter:
+            if status_filter not in DroneHelper.VALID_STATUSES:
+                 return jsonify({"error": f"Invalid status filter. Must be one of: {', '.join(DroneHelper.VALID_STATUSES)}"}), 400
+            # Add a helper DroneHelper.get_drones_by_status(status_filter) or filter directly
+            try:
+                response = supabase.table("Drone").select("*").eq("status", status_filter).execute()
+                drones = response.data
+            except Exception as db_e:
+                 raise Exception(f"Database error filtering drones: {db_e}") from db_e
+        else:
+            drones = DroneHelper.get_all_drones()
         return jsonify(drones)
     except Exception as e:
-        app.logger.error(f"Error in get_drones: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Failed to fetch drones: {str(e)}"}), 500
+        return handle_error(e, "Failed to fetch drones")
+
 
 @app.route('/api/drones/<int:drone_id>', methods=['GET'])
 def get_drone(drone_id):
-    app.logger.info(f"Received GET /api/drones/{drone_id} request")
     try:
         drone = DroneHelper.get_drone_by_id(drone_id)
         if drone:
-            app.logger.debug(f"Found drone {drone_id}: {drone}")
             return jsonify(drone)
         else:
-            app.logger.warning(f"Drone with ID {drone_id} not found")
             return jsonify({"error": "Drone not found"}), 404
     except Exception as e:
-        app.logger.error(f"Error in get_drone({drone_id}): {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Failed to fetch drone {drone_id}: {str(e)}"}), 500
+        return handle_error(e, f"Failed to fetch drone {drone_id}")
 
 @app.route('/api/drones', methods=['POST'])
 def create_drone():
-    app.logger.info("Received POST /api/drones request")
     data = request.get_json()
-    app.logger.debug(f"Received data: {data}")
-    if not data:
-        app.logger.warning("No input data provided for POST /api/drones")
-        return jsonify({"error": "No input data provided"}), 400
-    required_keys = ['status', 'batterij', 'magOpstijgen']
-    missing_keys = [key for key in required_keys if key not in data]
+    app.logger.info(f"POST /api/drones data: {data}")
+    if not data: return jsonify({"error": "No input data provided"}), 400
+
+    required_keys = ['status', 'batterij', 'magOpstijgen'] # Assuming magOpstijgen is required on create
+    missing_keys = [key for key in required_keys if key not in data] # Check key existence
     if missing_keys:
-        error_msg = f"Missing required fields: {', '.join(missing_keys)}"
-        app.logger.warning(f"Bad request for POST /api/drones: {error_msg}")
-        return jsonify({"error": error_msg}), 400
+        return jsonify({"error": f"Missing required fields: {', '.join(missing_keys)}"}), 400
+
     try:
+        # Validate types and values
+        status_val = str(data['status'])
+        if status_val not in DroneHelper.VALID_STATUSES:
+             raise ValueError(f"Invalid status '{status_val}'. Must be one of: {', '.join(DroneHelper.VALID_STATUSES)}")
+
         batterij_val = data['batterij']
         if not isinstance(batterij_val, (int, float)): raise ValueError("Battery level must be a number.")
-        batterij = int(batterij_val)
-        if not (0 <= batterij <= 100): raise ValueError("Battery level must be between 0 and 100.")
-        valid_statuses = ['AVAILABLE', 'IN_USE', 'MAINTENANCE', 'OFFLINE']
-        status_val = data['status']
-        if status_val not in valid_statuses: raise ValueError(f"Invalid status '{status_val}'. Must be one of: {', '.join(valid_statuses)}")
+        batterij_int = int(batterij_val)
+        if not (0 <= batterij_int <= 100): raise ValueError("Battery level must be between 0 and 100.")
+
         mag_opstijgen_val = data['magOpstijgen']
         if not isinstance(mag_opstijgen_val, bool): raise ValueError("magOpstijgen must be a boolean (true/false).")
-        new_drone = DroneHelper.create_drone(status=status_val, batterij=batterij, mag_opstijgen=mag_opstijgen_val)
+
+        new_drone = DroneHelper.create_drone(
+            status=status_val,
+            batterij=batterij_int,
+            mag_opstijgen=mag_opstijgen_val # Match DB column name 'magOpstijgen'
+        )
         if new_drone:
-            app.logger.info(f"Successfully created drone: {new_drone}")
+            app.logger.info(f"Drone created successfully: {new_drone.get('Id')}")
             return jsonify(new_drone), 201
         else:
             app.logger.error("DroneHelper.create_drone returned None")
             return jsonify({"error": "Failed to create drone in database"}), 500
-    except ValueError as ve:
-        error_msg = str(ve)
-        app.logger.warning(f"Validation error for POST /api/drones: {error_msg}")
-        return jsonify({"error": error_msg}), 400
+    except (ValueError, TypeError) as ve:
+        return handle_error(ve, "Invalid data for drone", 400)
+    except KeyError as ke:
+        return handle_error(ke, f"Missing field: {ke}", 400)
     except Exception as e:
-        app.logger.error(f"Error in create_drone: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": "An internal server error occurred"}), 500
+        return handle_error(e, "Error creating drone")
+
 
 @app.route('/api/drones/<int:drone_id>', methods=['PUT'])
 def update_drone(drone_id):
-    app.logger.info(f"Received PUT /api/drones/{drone_id} request")
     data = request.get_json()
-    app.logger.debug(f"Received data for update: {data}")
-    if not data:
-        app.logger.warning(f"No input data provided for PUT /api/drones/{drone_id}")
-        return jsonify({"error": "No input data provided"}), 400
-    update_data = {}
+    app.logger.info(f"PUT /api/drones/{drone_id} data: {data}")
+    if not data: return jsonify({"error": "No input data provided"}), 400
+
+    update_data = {} # Use DB column names for helper kwargs
     try:
         if 'status' in data:
-            valid_statuses = ['AVAILABLE', 'IN_USE', 'MAINTENANCE', 'OFFLINE']
-            if data['status'] not in valid_statuses: raise ValueError(f"Invalid status '{data['status']}'")
-            update_data['status'] = data['status']
+            status_val = str(data['status'])
+            if status_val not in DroneHelper.VALID_STATUSES:
+                raise ValueError(f"Invalid status '{status_val}'. Must be one of: {', '.join(DroneHelper.VALID_STATUSES)}")
+            update_data['status'] = status_val
         if 'batterij' in data:
-            batterij = int(data['batterij'])
-            if not (0 <= batterij <= 100): raise ValueError("Battery level must be between 0 and 100")
-            update_data['batterij'] = batterij
+            batterij_val = data['batterij']
+            if not isinstance(batterij_val, (int, float)): raise ValueError("Battery level must be a number.")
+            batterij_int = int(batterij_val)
+            if not (0 <= batterij_int <= 100): raise ValueError("Battery level must be between 0 and 100")
+            update_data['batterij'] = batterij_int
         if 'magOpstijgen' in data:
-            if not isinstance(data['magOpstijgen'], bool): raise ValueError("magOpstijgen must be boolean.")
-            update_data['magOpstijgen'] = data['magOpstijgen']
+            mag_opstijgen_val = data['magOpstijgen']
+            if not isinstance(mag_opstijgen_val, bool): raise ValueError("magOpstijgen must be boolean.")
+            update_data['magOpstijgen'] = mag_opstijgen_val # DB column name
+
         if not update_data: return jsonify({"error": "No valid fields provided for update"}), 400
+
         updated_drone = DroneHelper.update_drone(drone_id, **update_data)
         if updated_drone:
-            app.logger.info(f"Successfully updated drone {drone_id}: {updated_drone}")
+            app.logger.info(f"Drone {drone_id} updated successfully.")
             return jsonify(updated_drone)
         else:
-            app.logger.warning(f"Drone {drone_id} not found for update or update failed.")
-            return jsonify({"error": "Drone not found or update failed"}), 404
-    except ValueError as ve:
-        error_msg = str(ve)
-        app.logger.warning(f"Validation error for PUT /api/drones/{drone_id}: {error_msg}")
-        return jsonify({"error": error_msg}), 400
+             existing = DroneHelper.get_drone_by_id(drone_id)
+             if existing:
+                 app.logger.error(f"Update failed for existing drone {drone_id}.")
+                 return jsonify({"error": "Drone update failed"}), 500
+             else:
+                 return jsonify({"error": "Drone not found"}), 404
+    except (ValueError, TypeError) as ve:
+        return handle_error(ve, "Invalid data for drone update", 400)
     except Exception as e:
-        app.logger.error(f"Error in update_drone({drone_id}): {e}\n{traceback.format_exc()}")
-        return jsonify({"error": "An internal server error occurred"}), 500
+        return handle_error(e, f"Error updating drone {drone_id}")
 
 @app.route('/api/drones/<int:drone_id>', methods=['DELETE'])
 def delete_drone(drone_id):
-    app.logger.info(f"Received DELETE /api/drones/{drone_id} request")
+    app.logger.info(f"DELETE /api/drones/{drone_id}")
     try:
         success = DroneHelper.delete_drone(drone_id)
         if success:
             app.logger.info(f"Successfully deleted drone {drone_id}")
             return '', 204
         else:
-            app.logger.warning(f"Drone {drone_id} not found for deletion.")
             return jsonify({"error": "Drone not found"}), 404
+    except ValueError as ve: # Catch specific error from helper for FK violation
+        return handle_error(ve, str(ve), 409) # Conflict
     except Exception as e:
-        app.logger.error(f"Error in delete_drone({drone_id}): {e}\n{traceback.format_exc()}")
-        return jsonify({"error": "An internal server error occurred"}), 500
+        return handle_error(e, f"Error deleting drone {drone_id}")
 
-# --- Cyclus Routes (Corrected based on DB Schema) ---
+
+# --- Cyclus Routes ---
 @app.route('/api/cycli', methods=['GET'])
 def get_cycli():
     try:
-        # Correct: No filtering by event_id
-        # Maybe filter by VluchtCyclusId if needed?
-        vlucht_cyclus_id = request.args.get('vlucht_cyclus_id')
-        if vlucht_cyclus_id:
-             # Add a helper function get_cycli_by_vlucht_cyclus if needed
-             response = supabase.table("Cyclus").select("*").eq("VluchtCyclusId", int(vlucht_cyclus_id)).execute()
-             cycli = response.data
+        # Allow filtering by VluchtCyclusId
+        vlucht_cyclus_id_str = request.args.get('vlucht_cyclus_id')
+        if vlucht_cyclus_id_str:
+             try:
+                 vlucht_cyclus_id = int(vlucht_cyclus_id_str)
+                 cycli = CyclusHelper.get_cycli_by_vlucht_cyclus(vlucht_cyclus_id) # Use helper
+             except ValueError:
+                 return jsonify({"error": "Invalid vlucht_cyclus_id parameter"}), 400
         else:
              cycli = CyclusHelper.get_all_cycli()
         return jsonify(cycli)
-    except ValueError:
-        return jsonify({"error": "Invalid vlucht_cyclus_id provided"}), 400
     except Exception as e:
-        app.logger.error(f"Error getting cycli: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, "Failed to retrieve cycli")
 
 @app.route('/api/cycli/<int:cyclus_id>', methods=['GET'])
 def get_cyclus(cyclus_id):
@@ -711,132 +788,144 @@ def get_cyclus(cyclus_id):
             return jsonify(cyclus)
         return jsonify({"error": "Cyclus not found"}), 404
     except Exception as e:
-        app.logger.error(f"Error getting cyclus {cyclus_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Failed to retrieve cyclus {cyclus_id}")
 
 @app.route('/api/cycli', methods=['POST'])
 def create_cyclus():
     data = request.get_json()
-    app.logger.info(f"Received POST /api/cycli request data: {data}")
+    app.logger.info(f"POST /api/cycli data: {data}")
     if not data: return jsonify({"error": "No input data provided"}), 400
 
-    # Correct: Expect DB fields
-    required_keys = ['startuur', 'tijdstip'] # VluchtCyclusId is optional FK
-    missing_keys = [key for key in required_keys if key not in data]
+    required_keys = ['startuur', 'tijdstip'] # VluchtCyclusId is optional
+    missing_keys = [key for key in required_keys if key not in data or data[key] is None]
     if missing_keys:
          return jsonify({"error": f"Missing required fields: {', '.join(missing_keys)}"}), 400
 
     try:
-        startuur_val = time.fromisoformat(data['startuur'])
-        tijdstip_val = time.fromisoformat(data['tijdstip'])
-        vlucht_cyclus_id_val = data.get('vlucht_cyclus_id') # Optional
-        if vlucht_cyclus_id_val is not None:
-            vlucht_cyclus_id_val = int(vlucht_cyclus_id_val)
+        startuur_obj = time.fromisoformat(data['startuur'])
+        tijdstip_obj = time.fromisoformat(data['tijdstip'])
 
-        # Correct: Call helper with DB fields
+        # Handle optional FK
+        vlucht_cyclus_id_val = data.get('vlucht_cyclus_id')
+        if vlucht_cyclus_id_val is not None:
+            try:
+                vlucht_cyclus_id_val = int(vlucht_cyclus_id_val)
+            except (ValueError, TypeError):
+                 raise ValueError("Invalid format for vlucht_cyclus_id, must be an integer or null")
+
         cyclus = CyclusHelper.create_cyclus(
-            startuur=startuur_val,
-            tijdstip=tijdstip_val,
+            startuur=startuur_obj,
+            tijdstip=tijdstip_obj,
             vlucht_cyclus_id=vlucht_cyclus_id_val
         )
         if cyclus:
-            app.logger.info(f"Cyclus created successfully: {cyclus}")
+            app.logger.info(f"Cyclus created successfully: {cyclus.get('Id')}")
             return jsonify(cyclus), 201
         else:
-             app.logger.error("CyclusHelper.create_cyclus returned None")
-             return jsonify({"error": "Failed to create cyclus"}), 500
+             app.logger.error("CyclusHelper.create_cyclus returned None.")
+             return jsonify({"error": "Failed to create cyclus (check VluchtCyclusId?)"}), 500
     except (ValueError, TypeError) as ve:
-        error_msg = f"Invalid data for cyclus: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return handle_error(ve, "Invalid data for cyclus", 400)
+    except KeyError as ke:
+        return handle_error(ke, f"Missing field: {ke}", 400)
     except Exception as e:
-        app.logger.error(f"Error creating cyclus: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, "Error creating cyclus")
 
 @app.route('/api/cycli/<int:cyclus_id>', methods=['PUT'])
 def update_cyclus(cyclus_id):
     data = request.get_json()
-    app.logger.info(f"Received PUT /api/cycli/{cyclus_id} request data: {data}")
+    app.logger.info(f"PUT /api/cycli/{cyclus_id} data: {data}")
     if not data: return jsonify({"error": "No input data provided"}), 400
 
-    update_data = {}
+    update_data = {} # Use DB column names (PascalCase) for helper kwargs
     try:
-        # Correct: Update based on DB fields
         if 'startuur' in data:
-            update_data['startuur'] = time.fromisoformat(data['startuur']).isoformat()
+            update_data['startuur'] = time.fromisoformat(data['startuur']).isoformat() # Pass as string
         if 'tijdstip' in data:
-            update_data['tijdstip'] = time.fromisoformat(data['tijdstip']).isoformat()
-        if 'vlucht_cyclus_id' in data: # Allow updating/setting the FK
-             update_data['VluchtCyclusId'] = int(data['vlucht_cyclus_id']) if data['vlucht_cyclus_id'] is not None else None
+            update_data['tijdstip'] = time.fromisoformat(data['tijdstip']).isoformat() # Pass as string
+        if 'vlucht_cyclus_id' in data:
+            vc_id = data['vlucht_cyclus_id']
+            if vc_id is None:
+                update_data['VluchtCyclusId'] = None
+            else:
+                try:
+                    update_data['VluchtCyclusId'] = int(vc_id)
+                except (ValueError, TypeError):
+                    raise ValueError("Invalid format for vlucht_cyclus_id, must be an integer or null")
 
         if not update_data:
              return jsonify({"error": "No valid fields provided for update"}), 400
 
         cyclus = CyclusHelper.update_cyclus(cyclus_id=cyclus_id, **update_data)
         if cyclus:
-            app.logger.info(f"Cyclus {cyclus_id} updated successfully: {cyclus}")
+            app.logger.info(f"Cyclus {cyclus_id} updated successfully.")
             return jsonify(cyclus)
         else:
-            return jsonify({"error": "Cyclus not found or update failed"}), 404
+            existing = CyclusHelper.get_cyclus_by_id(cyclus_id)
+            if existing:
+                 app.logger.error(f"Update failed for existing cyclus {cyclus_id}.")
+                 return jsonify({"error": "Cyclus update failed (check VluchtCyclusId?)"}), 500
+            else:
+                return jsonify({"error": "Cyclus not found"}), 404
     except (ValueError, TypeError) as ve:
-        error_msg = f"Invalid data type for update: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return handle_error(ve, "Invalid data type for update", 400)
     except Exception as e:
-        app.logger.error(f"Error updating cyclus {cyclus_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Error updating cyclus {cyclus_id}")
 
 @app.route('/api/cycli/<int:cyclus_id>', methods=['DELETE'])
 def delete_cyclus(cyclus_id):
-    app.logger.info(f"Received DELETE /api/cycli/{cyclus_id} request")
+    app.logger.info(f"DELETE /api/cycli/{cyclus_id}")
     try:
-        # Need to handle foreign key constraint if CyclusId is used in DockingCyclus
-        # Option 1: Set FK in DockingCyclus to NULL first (if allowed)
-        # Option 2: Delete related DockingCyclus rows first
-        # Option 3: Use ON DELETE SET NULL or ON DELETE CASCADE in DB (not currently set)
-        # Simple deletion (will fail if FK constraint exists):
+        # Helper now checks for DockingCyclus references and raises ValueError
         success = CyclusHelper.delete_cyclus(cyclus_id)
         if success:
             app.logger.info(f"Cyclus {cyclus_id} deleted successfully")
             return '', 204
         else:
             return jsonify({"error": "Cyclus not found"}), 404
+    except ValueError as ve:
+         # Catch the specific error raised by the helper for FK violation
+         return handle_error(ve, str(ve), 409) # Conflict
     except Exception as e:
-        # Catch potential FK violation errors
-        if "violates foreign key constraint" in str(e).lower():
-             error_msg = f"Cannot delete Cyclus {cyclus_id} because it is referenced by other records (e.g., DockingCyclus)."
-             app.logger.warning(error_msg)
-             return jsonify({"error": error_msg}), 409 # 409 Conflict
-        app.logger.error(f"Error deleting cyclus {cyclus_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+         # Catch other unexpected errors
+         return handle_error(e, f"Error deleting cyclus {cyclus_id}")
 
-# --- VluchtCyclus Routes (Corrected based on DB Schema) ---
+
+# --- VluchtCyclus Routes ---
 @app.route('/api/vlucht-cycli', methods=['GET'])
 def get_vlucht_cycli():
     try:
-        # Correct: Cannot filter by cyclus_id. Can filter by FKs in VluchtCyclus table
-        drone_id = request.args.get('drone_id')
-        zone_id = request.args.get('zone_id')
-        plaats_id = request.args.get('plaats_id')
-        verslag_id = request.args.get('verslag_id')
+        # Allow filtering by FKs in VluchtCyclus table
+        filters = {}
+        param_map = {
+            'drone_id': 'DroneId',
+            'zone_id': 'ZoneId',
+            'plaats_id': 'PlaatsId',
+            'verslag_id': 'VerslagId'
+        }
+        for param_key, db_col in param_map.items():
+            param_val_str = request.args.get(param_key)
+            if param_val_str:
+                try:
+                    filters[db_col] = int(param_val_str)
+                except ValueError:
+                    return jsonify({"error": f"Invalid {param_key} parameter"}), 400
 
-        query = supabase.table("VluchtCyclus").select("*")
-        if drone_id: query = query.eq("DroneId", int(drone_id))
-        if zone_id: query = query.eq("ZoneId", int(zone_id))
-        if plaats_id: query = query.eq("PlaatsId", int(plaats_id))
-        if verslag_id: query = query.eq("VerslagId", int(verslag_id))
-
-        response = query.execute()
-        vlucht_cycli = response.data
-        # Or call specific helpers like get_vlucht_cycli_by_drone if they exist
-        # else:
-        #    vlucht_cycli = VluchtCyclusHelper.get_all_vlucht_cycli()
+        if filters:
+             # Add helper VluchtCyclusHelper.get_vlucht_cycli_filtered(**filters) or query directly
+            try:
+                query = supabase.table("VluchtCyclus").select("*")
+                for col, val in filters.items():
+                     query = query.eq(col, val)
+                response = query.execute()
+                vlucht_cycli = response.data
+            except Exception as db_e:
+                 raise Exception(f"Database error filtering vlucht cycli: {db_e}") from db_e
+        else:
+            vlucht_cycli = VluchtCyclusHelper.get_all_vlucht_cycli()
         return jsonify(vlucht_cycli)
-    except ValueError:
-         return jsonify({"error": "Invalid ID provided for filtering"}), 400
     except Exception as e:
-        app.logger.error(f"Error getting vlucht-cycli: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, "Failed to retrieve vlucht cycli")
 
 @app.route('/api/vlucht-cycli/<int:vlucht_cyclus_id>', methods=['GET'])
 def get_vlucht_cyclus(vlucht_cyclus_id):
@@ -844,142 +933,158 @@ def get_vlucht_cyclus(vlucht_cyclus_id):
         vlucht_cyclus = VluchtCyclusHelper.get_vlucht_cyclus_by_id(vlucht_cyclus_id)
         if vlucht_cyclus:
             return jsonify(vlucht_cyclus)
-        return jsonify({"error": "Vlucht cyclus not found"}), 404
+        return jsonify({"error": "VluchtCyclus not found"}), 404
     except Exception as e:
-        app.logger.error(f"Error getting vlucht-cyclus {vlucht_cyclus_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Failed to retrieve VluchtCyclus {vlucht_cyclus_id}")
 
 @app.route('/api/vlucht-cycli', methods=['POST'])
 def create_vlucht_cyclus():
     data = request.get_json()
-    app.logger.info(f"Received POST /api/vlucht-cycli request data: {data}")
-    # No strictly required fields based on DB (all FKs nullable), but usually at least one is expected
+    app.logger.info(f"POST /api/vlucht-cycli data: {data}")
+    # No strictly required fields based on DB (all FKs nullable), but maybe enforce one?
     if not data: return jsonify({"error": "No input data provided"}), 400
 
     try:
-        # Correct: Expect optional DB fields (FKs)
-        verslag_id_val = data.get('verslag_id')
-        plaats_id_val = data.get('plaats_id')
-        drone_id_val = data.get('drone_id')
-        zone_id_val = data.get('zone_id')
+        # Extract optional FKs (expect snake_case from JSON)
+        fk_values = {}
+        param_map = {
+            'verslag_id': 'verslag_id', # JSON key -> helper param name
+            'plaats_id': 'plaats_id',
+            'drone_id': 'drone_id',
+            'zone_id': 'zone_id'
+        }
+        for json_key, helper_param in param_map.items():
+            val = data.get(json_key)
+            if val is not None:
+                try:
+                    fk_values[helper_param] = int(val)
+                except (ValueError, TypeError):
+                     raise ValueError(f"Invalid format for {json_key}, must be an integer or null")
+            else:
+                fk_values[helper_param] = None # Explicitly pass None
 
-        # Basic validation/conversion if values are present
-        if verslag_id_val is not None: verslag_id_val = int(verslag_id_val)
-        if plaats_id_val is not None: plaats_id_val = int(plaats_id_val)
-        if drone_id_val is not None: drone_id_val = int(drone_id_val)
-        if zone_id_val is not None: zone_id_val = int(zone_id_val)
+        # Maybe require at least one FK to be provided?
+        # if not any(fk_values.values()):
+        #     return jsonify({"error": "At least one ID (verslag, plaats, drone, or zone) must be provided"}), 400
 
-        if not any([verslag_id_val, plaats_id_val, drone_id_val, zone_id_val]):
-            return jsonify({"error": "At least one ID (verslag, plaats, drone, or zone) must be provided"}), 400
+        vlucht_cyclus = VluchtCyclusHelper.create_vlucht_cyclus(**fk_values)
 
-        # Correct: Call helper with optional DB fields
-        vlucht_cyclus = VluchtCyclusHelper.create_vlucht_cyclus(
-            verslag_id=verslag_id_val,
-            plaats_id=plaats_id_val,
-            drone_id=drone_id_val,
-            zone_id=zone_id_val
-        )
         if vlucht_cyclus:
-            app.logger.info(f"VluchtCyclus created successfully: {vlucht_cyclus}")
+            app.logger.info(f"VluchtCyclus created successfully: {vlucht_cyclus.get('Id')}")
             return jsonify(vlucht_cyclus), 201
         else:
-            app.logger.error("VluchtCyclusHelper.create_vlucht_cyclus returned None")
-            return jsonify({"error": "Failed to create vlucht cyclus"}), 500
+            app.logger.error("VluchtCyclusHelper.create_vlucht_cyclus returned None.")
+            return jsonify({"error": "Failed to create VluchtCyclus (check reference IDs?)"}), 500
     except (ValueError, TypeError) as ve:
-        error_msg = f"Invalid ID format for VluchtCyclus: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return handle_error(ve, "Invalid ID format for VluchtCyclus", 400)
+    except KeyError as ke:
+         return handle_error(ke, f"Missing field: {ke}", 400)
     except Exception as e:
-        # Catch FK constraint errors if IDs don't exist in referenced tables
-        if "violates foreign key constraint" in str(e).lower():
-            error_msg = f"Invalid reference ID provided (e.g., DroneId, ZoneId does not exist): {e}"
-            app.logger.warning(error_msg)
-            return jsonify({"error": error_msg}), 400
-        app.logger.error(f"Error creating vlucht-cyclus: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, "Error creating VluchtCyclus")
+
 
 @app.route('/api/vlucht-cycli/<int:vlucht_cyclus_id>', methods=['PUT'])
 def update_vlucht_cyclus(vlucht_cyclus_id):
     data = request.get_json()
-    app.logger.info(f"Received PUT /api/vlucht-cycli/{vlucht_cyclus_id} request data: {data}")
+    app.logger.info(f"PUT /api/vlucht-cycli/{vlucht_cyclus_id} data: {data}")
     if not data: return jsonify({"error": "No input data provided"}), 400
 
-    update_data = {}
+    update_data = {} # Use PascalCase for helper kwargs
     try:
-        # Correct: Update based on optional DB fields (FKs)
-        if 'verslag_id' in data: update_data['VerslagId'] = int(data['verslag_id']) if data['verslag_id'] is not None else None
-        if 'plaats_id' in data: update_data['PlaatsId'] = int(data['plaats_id']) if data['plaats_id'] is not None else None
-        if 'drone_id' in data: update_data['DroneId'] = int(data['drone_id']) if data['drone_id'] is not None else None
-        if 'zone_id' in data: update_data['ZoneId'] = int(data['zone_id']) if data['zone_id'] is not None else None
+        # Map JSON snake_case keys to DB PascalCase keys
+        param_map = {
+            'verslag_id': 'VerslagId',
+            'plaats_id': 'PlaatsId',
+            'drone_id': 'DroneId',
+            'zone_id': 'ZoneId'
+        }
+        for json_key, db_key in param_map.items():
+             if json_key in data:
+                 val = data[json_key]
+                 if val is None:
+                     update_data[db_key] = None
+                 else:
+                     try:
+                         update_data[db_key] = int(val)
+                     except (ValueError, TypeError):
+                          raise ValueError(f"Invalid format for {json_key}, must be an integer or null")
 
         if not update_data:
              return jsonify({"error": "No valid fields provided for update"}), 400
 
-        vlucht_cyclus = VluchtCyclusHelper.update_vlucht_cyclus(vlucht_cyclus_id=vlucht_cyclus_id, **update_data)
+        vlucht_cyclus = VluchtCyclusHelper.update_vlucht_cyclus(
+            vlucht_cyclus_id=vlucht_cyclus_id, **update_data
+        )
         if vlucht_cyclus:
-             app.logger.info(f"VluchtCyclus {vlucht_cyclus_id} updated successfully: {vlucht_cyclus}")
+             app.logger.info(f"VluchtCyclus {vlucht_cyclus_id} updated successfully.")
              return jsonify(vlucht_cyclus)
         else:
-            return jsonify({"error": "VluchtCyclus not found or update failed"}), 404
+            existing = VluchtCyclusHelper.get_vlucht_cyclus_by_id(vlucht_cyclus_id)
+            if existing:
+                 app.logger.error(f"Update failed for existing VluchtCyclus {vlucht_cyclus_id}.")
+                 return jsonify({"error": "VluchtCyclus update failed (check reference IDs?)"}), 500
+            else:
+                return jsonify({"error": "VluchtCyclus not found"}), 404
     except (ValueError, TypeError) as ve:
-        error_msg = f"Invalid ID format for update: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return handle_error(ve, "Invalid ID format for update", 400)
     except Exception as e:
-        # Catch FK constraint errors
-        if "violates foreign key constraint" in str(e).lower():
-            error_msg = f"Invalid reference ID provided for update: {e}"
-            app.logger.warning(error_msg)
-            return jsonify({"error": error_msg}), 400
-        app.logger.error(f"Error updating vlucht-cyclus {vlucht_cyclus_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Error updating VluchtCyclus {vlucht_cyclus_id}")
 
 @app.route('/api/vlucht-cycli/<int:vlucht_cyclus_id>', methods=['DELETE'])
 def delete_vlucht_cyclus(vlucht_cyclus_id):
-    app.logger.info(f"Received DELETE /api/vlucht-cycli/{vlucht_cyclus_id} request")
+    app.logger.info(f"DELETE /api/vlucht-cycli/{vlucht_cyclus_id}")
     try:
-         # Check if this VluchtCyclusId is referenced in the Cyclus table
-        response = supabase.table("Cyclus").select("Id").eq("VluchtCyclusId", vlucht_cyclus_id).limit(1).execute()
-        if response.data:
-            error_msg = f"Cannot delete VluchtCyclus {vlucht_cyclus_id} because it is referenced by Cyclus {response.data[0]['Id']}."
-            app.logger.warning(error_msg)
-            return jsonify({"error": error_msg}), 409 # Conflict
-
+        # Helper checks for Cyclus reference and raises ValueError (409)
         success = VluchtCyclusHelper.delete_vlucht_cyclus(vlucht_cyclus_id)
         if success:
             app.logger.info(f"VluchtCyclus {vlucht_cyclus_id} deleted successfully")
             return '', 204
         else:
             return jsonify({"error": "VluchtCyclus not found"}), 404
+    except ValueError as ve: # Catch specific error from helper for FK violation
+        return handle_error(ve, str(ve), 409) # Conflict
     except Exception as e:
-        app.logger.error(f"Error deleting vlucht-cyclus {vlucht_cyclus_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Error deleting VluchtCyclus {vlucht_cyclus_id}")
 
-# --- DockingCyclus Routes (Corrected based on DB Schema) ---
+
+# --- DockingCyclus Routes ---
 @app.route('/api/docking-cycli', methods=['GET'])
 def get_docking_cycli():
     try:
-        # Correct: Filtering by cyclus_id is valid
-        cyclus_id = request.args.get('cyclus_id')
-        drone_id = request.args.get('drone_id')
-        docking_id = request.args.get('docking_id')
+        # Allow filtering by FKs
+        filters = {}
+        param_map = {
+            'drone_id': 'DroneId',
+            'docking_id': 'DockingId',
+            'cyclus_id': 'CyclusId'
+        }
+        for param_key, db_col in param_map.items():
+            param_val_str = request.args.get(param_key)
+            if param_val_str:
+                try:
+                    filters[db_col] = int(param_val_str)
+                except ValueError:
+                    return jsonify({"error": f"Invalid {param_key} parameter"}), 400
 
-        query = supabase.table("DockingCyclus").select("*")
-        if cyclus_id: query = query.eq("CyclusId", int(cyclus_id))
-        if drone_id: query = query.eq("DroneId", int(drone_id))
-        if docking_id: query = query.eq("DockingId", int(docking_id))
-
-        response = query.execute()
-        docking_cycli = response.data
-        # Or call specific helpers like get_docking_cycli_by_cyclus if they exist
-        # else:
-        #    docking_cycli = DockingCyclusHelper.get_all_docking_cycli()
+        if filters:
+             # Use specific helpers or direct query
+             try:
+                query = supabase.table("DockingCyclus").select("*")
+                for col, val in filters.items():
+                     query = query.eq(col, val)
+                response = query.execute()
+                docking_cycli = response.data
+             except Exception as db_e:
+                 raise Exception(f"Database error filtering docking cycli: {db_e}") from db_e
+             # Example using helpers:
+             # if 'CyclusId' in filters:
+             #     docking_cycli = DockingCyclusHelper.get_docking_cycli_by_cyclus(filters['CyclusId'])
+             # # Add similar logic for other filters or combine if needed
+        else:
+            docking_cycli = DockingCyclusHelper.get_all_docking_cycli()
         return jsonify(docking_cycli)
-    except ValueError:
-         return jsonify({"error": "Invalid ID provided for filtering"}), 400
     except Exception as e:
-        app.logger.error(f"Error getting docking-cycli: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, "Failed to retrieve docking cycli")
 
 @app.route('/api/docking-cycli/<int:docking_cyclus_id>', methods=['GET'])
 def get_docking_cyclus(docking_cyclus_id):
@@ -987,20 +1092,19 @@ def get_docking_cyclus(docking_cyclus_id):
         docking_cyclus = DockingCyclusHelper.get_docking_cyclus_by_id(docking_cyclus_id)
         if docking_cyclus:
             return jsonify(docking_cyclus)
-        return jsonify({"error": "Docking cyclus not found"}), 404
+        return jsonify({"error": "DockingCyclus not found"}), 404
     except Exception as e:
-        app.logger.error(f"Error getting docking-cyclus {docking_cyclus_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Failed to retrieve DockingCyclus {docking_cyclus_id}")
 
 @app.route('/api/docking-cycli', methods=['POST'])
 def create_docking_cyclus():
     data = request.get_json()
-    app.logger.info(f"Received POST /api/docking-cycli request data: {data}")
+    app.logger.info(f"POST /api/docking-cycli data: {data}")
     if not data: return jsonify({"error": "No input data provided"}), 400
 
-    # Correct: Expect DB fields (FKs)
+    # FKs seem required based on schema
     required_keys = ['drone_id', 'docking_id', 'cyclus_id']
-    missing_keys = [key for key in required_keys if key not in data]
+    missing_keys = [key for key in required_keys if key not in data or data[key] is None]
     if missing_keys:
          return jsonify({"error": f"Missing required fields: {', '.join(missing_keys)}"}), 400
 
@@ -1009,69 +1113,75 @@ def create_docking_cyclus():
         docking_id_val = int(data['docking_id'])
         cyclus_id_val = int(data['cyclus_id'])
 
-        # Correct: Call helper with DB fields
+        # Call helper with validated IDs
         docking_cyclus = DockingCyclusHelper.create_docking_cyclus(
             drone_id=drone_id_val,
             docking_id=docking_id_val,
             cyclus_id=cyclus_id_val
         )
         if docking_cyclus:
-            app.logger.info(f"DockingCyclus created successfully: {docking_cyclus}")
+            app.logger.info(f"DockingCyclus created successfully: {docking_cyclus.get('Id')}")
             return jsonify(docking_cyclus), 201
         else:
-            app.logger.error("DockingCyclusHelper.create_docking_cyclus returned None")
-            return jsonify({"error": "Failed to create docking cyclus"}), 500
+            app.logger.error("DockingCyclusHelper.create_docking_cyclus returned None.")
+            return jsonify({"error": "Failed to create DockingCyclus (check reference IDs?)"}), 500
     except (ValueError, TypeError) as ve:
-        error_msg = f"Invalid ID format for DockingCyclus: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        # Catches explicit ValueError from helper on FK violation or int conversion error
+        return handle_error(ve, "Invalid data for DockingCyclus", 400)
+    except KeyError as ke:
+        return handle_error(ke, f"Missing field: {ke}", 400)
     except Exception as e:
-         # Catch FK constraint errors
-        if "violates foreign key constraint" in str(e).lower():
-            error_msg = f"Invalid reference ID provided (DroneId, DockingId, or CyclusId does not exist): {e}"
-            app.logger.warning(error_msg)
-            return jsonify({"error": error_msg}), 400
-        app.logger.error(f"Error creating docking-cyclus: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, "Error creating DockingCyclus")
 
 @app.route('/api/docking-cycli/<int:docking_cyclus_id>', methods=['PUT'])
 def update_docking_cyclus(docking_cyclus_id):
     data = request.get_json()
-    app.logger.info(f"Received PUT /api/docking-cycli/{docking_cyclus_id} request data: {data}")
+    app.logger.info(f"PUT /api/docking-cycli/{docking_cyclus_id} data: {data}")
     if not data: return jsonify({"error": "No input data provided"}), 400
 
-    update_data = {}
+    update_data = {} # Use PascalCase for helper kwargs
     try:
-        # Correct: Update based on DB fields (FKs)
-        if 'drone_id' in data: update_data['DroneId'] = int(data['drone_id']) if data['drone_id'] is not None else None
-        if 'docking_id' in data: update_data['DockingId'] = int(data['docking_id']) if data['docking_id'] is not None else None
-        if 'cyclus_id' in data: update_data['CyclusId'] = int(data['cyclus_id']) if data['cyclus_id'] is not None else None
+        # Map JSON snake_case keys to DB PascalCase keys
+        param_map = {
+            'drone_id': 'DroneId',
+            'docking_id': 'DockingId',
+            'cyclus_id': 'CyclusId'
+        }
+        for json_key, db_key in param_map.items():
+             if json_key in data:
+                 val = data[json_key]
+                 # FKs are likely NOT NULL, so don't allow None
+                 if val is None:
+                      raise ValueError(f"{json_key} cannot be null for DockingCyclus.")
+                 try:
+                     update_data[db_key] = int(val)
+                 except (ValueError, TypeError):
+                      raise ValueError(f"Invalid format for {json_key}, must be an integer.")
 
         if not update_data:
              return jsonify({"error": "No valid fields provided for update"}), 400
 
-        docking_cyclus = DockingCyclusHelper.update_docking_cyclus(docking_cyclus_id=docking_cyclus_id, **update_data)
+        docking_cyclus = DockingCyclusHelper.update_docking_cyclus(
+             docking_cyclus_id=docking_cyclus_id, **update_data
+        )
         if docking_cyclus:
-            app.logger.info(f"DockingCyclus {docking_cyclus_id} updated successfully: {docking_cyclus}")
+            app.logger.info(f"DockingCyclus {docking_cyclus_id} updated successfully.")
             return jsonify(docking_cyclus)
         else:
-            return jsonify({"error": "DockingCyclus not found or update failed"}), 404
+             existing = DockingCyclusHelper.get_docking_cyclus_by_id(docking_cyclus_id)
+             if existing:
+                 app.logger.error(f"Update failed for existing DockingCyclus {docking_cyclus_id}.")
+                 return jsonify({"error": "DockingCyclus update failed (check reference IDs?)"}), 500
+             else:
+                 return jsonify({"error": "DockingCyclus not found"}), 404
     except (ValueError, TypeError) as ve:
-        error_msg = f"Invalid ID format for update: {ve}"
-        app.logger.error(error_msg)
-        return jsonify({"error": error_msg}), 400
+        return handle_error(ve, "Invalid data for DockingCyclus update", 400)
     except Exception as e:
-         # Catch FK constraint errors
-        if "violates foreign key constraint" in str(e).lower():
-            error_msg = f"Invalid reference ID provided for update: {e}"
-            app.logger.warning(error_msg)
-            return jsonify({"error": error_msg}), 400
-        app.logger.error(f"Error updating docking-cyclus {docking_cyclus_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        return handle_error(e, f"Error updating DockingCyclus {docking_cyclus_id}")
 
 @app.route('/api/docking-cycli/<int:docking_cyclus_id>', methods=['DELETE'])
 def delete_docking_cyclus(docking_cyclus_id):
-    app.logger.info(f"Received DELETE /api/docking-cycli/{docking_cyclus_id} request")
+    app.logger.info(f"DELETE /api/docking-cycli/{docking_cyclus_id}")
     try:
         success = DockingCyclusHelper.delete_docking_cyclus(docking_cyclus_id)
         if success:
@@ -1080,134 +1190,300 @@ def delete_docking_cyclus(docking_cyclus_id):
         else:
             return jsonify({"error": "DockingCyclus not found"}), 404
     except Exception as e:
-        app.logger.error(f"Error deleting docking-cyclus {docking_cyclus_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+        # This table isn't referenced by others, so FK errors unlikely on delete
+        return handle_error(e, f"Error deleting DockingCyclus {docking_cyclus_id}")
 
 
-# --- Docking Routes (Example - Add if needed) ---
-# @app.route('/api/docking', methods=['GET'])
-# def get_docking_stations():
+# --- Docking Routes (Add basic CRUD similar to Startplaats if needed) ---
+@app.route('/api/docking', methods=['GET'])
+def get_docking_stations():
+    try:
+        is_beschikbaar_str = request.args.get('isbeschikbaar')
+        is_beschikbaar = str_to_bool(is_beschikbaar_str)
+
+        if is_beschikbaar is True:
+             stations = DockingHelper.get_available_dockings()
+        elif is_beschikbaar is False:
+             # Add helper or filter directly
+             try:
+                  response = supabase.table("Docking").select("*").eq("isbeschikbaar", False).execute()
+                  stations = response.data
+             except Exception as db_e:
+                  raise Exception(f"Database error filtering docking stations: {db_e}") from db_e
+        else:
+             stations = DockingHelper.get_all_dockings()
+        return jsonify(stations)
+    except Exception as e:
+        return handle_error(e, "Failed to retrieve docking stations")
+
+@app.route('/api/docking/<int:docking_id>', methods=['GET'])
+def get_docking_station(docking_id):
+    try:
+        station = DockingHelper.get_docking_by_id(docking_id)
+        if station:
+            return jsonify(station)
+        return jsonify({"error": "Docking station not found"}), 404
+    except Exception as e:
+        return handle_error(e, f"Failed to retrieve docking station {docking_id}")
+
+
+@app.route('/api/docking', methods=['POST'])
+def create_docking_station():
+    data = request.get_json()
+    app.logger.info(f"POST /api/docking data: {data}")
+    if not data: return jsonify({"error": "No input data provided"}), 400
+
+    if 'locatie' not in data or data['locatie'] is None:
+        return jsonify({"error": "Missing required field: locatie"}), 400
+
+    try:
+        locatie_str = str(data['locatie']).strip()
+        if not locatie_str: raise ValueError("Location (locatie) cannot be empty.")
+
+        is_beschikbaar_val = data.get('isbeschikbaar', True)
+        if not isinstance(is_beschikbaar_val, bool):
+             app.logger.warning("Invalid type for 'isbeschikbaar' in POST /api/docking, defaulting to True.")
+             is_beschikbaar_val = True
+
+        station = DockingHelper.create_docking(
+            locatie=locatie_str,
+            is_beschikbaar=is_beschikbaar_val
+        )
+        if station:
+            app.logger.info(f"Docking station created successfully: {station.get('Id')}")
+            return jsonify(station), 201
+        else:
+            app.logger.error("DockingHelper.create_docking returned None.")
+            return jsonify({"error": "Failed to create docking station"}), 500
+    except (ValueError, TypeError) as ve:
+        return handle_error(ve, "Invalid data for docking station", 400)
+    except KeyError as ke:
+         return handle_error(ke, f"Missing field: {ke}", 400)
+    except Exception as e:
+        return handle_error(e, "Error creating docking station")
+
+@app.route('/api/docking/<int:docking_id>', methods=['PUT'])
+def update_docking_station(docking_id):
+    data = request.get_json()
+    app.logger.info(f"PUT /api/docking/{docking_id} data: {data}")
+    if not data: return jsonify({"error": "No input data provided"}), 400
+
+    update_data = {}
+    try:
+        if 'locatie' in data:
+            locatie_str = str(data['locatie']).strip()
+            if not locatie_str: raise ValueError("Location (locatie) cannot be empty.")
+            update_data['locatie'] = locatie_str
+        if 'isbeschikbaar' in data:
+            if not isinstance(data['isbeschikbaar'], bool):
+                 raise ValueError("isbeschikbaar must be a boolean (true/false).")
+            update_data['isbeschikbaar'] = data['isbeschikbaar']
+
+        if not update_data:
+             return jsonify({"error": "No valid fields provided for update"}), 400
+
+        station = DockingHelper.update_docking(docking_id=docking_id, **update_data)
+        if station:
+             app.logger.info(f"Docking station {docking_id} updated successfully.")
+             return jsonify(station)
+        else:
+             existing = DockingHelper.get_docking_by_id(docking_id)
+             if existing:
+                 app.logger.error(f"Update failed for existing docking station {docking_id}.")
+                 return jsonify({"error": "Docking station update failed"}), 500
+             else:
+                 return jsonify({"error": "Docking station not found"}), 404
+    except ValueError as ve:
+        return handle_error(ve, "Invalid data type for update", 400)
+    except Exception as e:
+        return handle_error(e, f"Error updating docking station {docking_id}")
+
+
+@app.route('/api/docking/<int:docking_id>', methods=['DELETE'])
+def delete_docking_station(docking_id):
+    app.logger.info(f"DELETE /api/docking/{docking_id}")
+    try:
+        success = DockingHelper.delete_docking(docking_id)
+        if success:
+            app.logger.info(f"Docking station {docking_id} deleted successfully")
+            return '', 204
+        else:
+            return jsonify({"error": "Docking station not found"}), 404
+    except ValueError as ve: # Catch specific error from helper for FK violation
+        return handle_error(ve, str(ve), 409) # Conflict
+    except Exception as e:
+        return handle_error(e, f"Error deleting docking station {docking_id}")
+
+
+# --- Dashboard Routes (Commented/Corrected) ---
+
+# THIS ROUTE IS PROBLEMATIC: Needs redesign based on actual DB schema.
+# Evenement does NOT directly link to Startplaats, Docking, or Drone.
+# Links are: Evenement -> Zone -> VluchtCyclus -> Drone/Startplaats
+#           Evenement -> Zone -> VluchtCyclus <- Cyclus -> DockingCyclus -> Drone/Docking
+# You need JOINs or multiple queries to gather this info.
+# @app.route('/api/dashboard/event-overview/<int:event_id>', methods=['GET'])
+# def get_event_overview(event_id):
+#     app.logger.warning("Route /api/dashboard/event-overview/<id> needs complete redesign based on DB schema")
 #     try:
-#         # Similar logic to get_startplaatsen
-#         is_beschikbaar_str = request.args.get('isbeschikbaar')
-#         is_beschikbaar = str_to_bool(is_beschikbaar_str)
-#         if is_beschikbaar is True:
-#             stations = DockingHelper.get_available_dockings()
-#         # Add logic for is_beschikbaar is False if needed
-#         else:
-#             stations = DockingHelper.get_all_dockings()
-#         return jsonify(stations)
+#         # 1. Get Event details
+#         event = EvenementHelper.get_event_by_id(event_id)
+#         if not event: return jsonify({"error": "Event not found"}), 404
+#
+#         # 2. Get Zones for this Event
+#         zones = ZoneHelper.get_zones_by_event(event_id)
+#         zone_ids = [z['Id'] for z in zones]
+#
+#         # 3. Get VluchtCycli associated with these Zones
+#         vlucht_cycli = []
+#         if zone_ids:
+#             # Need helper or direct query: VluchtCyclusHelper.get_vlucht_cycli_by_zone_ids(zone_ids)
+#             # Direct query example:
+#             response = supabase.table("VluchtCyclus").select("*").in_("ZoneId", zone_ids).execute()
+#             vlucht_cycli = response.data
+#
+#         # 4. Extract unique Drone IDs, Startplaats IDs from VluchtCycli
+#         drone_ids = {vc['DroneId'] for vc in vlucht_cycli if vc.get('DroneId')}
+#         startplaats_ids = {vc['PlaatsId'] for vc in vlucht_cycli if vc.get('PlaatsId')}
+#         vlucht_cyclus_ids = {vc['Id'] for vc in vlucht_cycli}
+#
+#         # 5. Get details for these Drones and Startplaatsen
+#         drones = []
+#         if drone_ids:
+#             response = supabase.table("Drone").select("*").in_("Id", list(drone_ids)).execute()
+#             drones = response.data
+#
+#         startplaatsen = []
+#         if startplaats_ids:
+#              response = supabase.table("Startplaats").select("*").in_("Id", list(startplaats_ids)).execute()
+#              startplaatsen = response.data
+#
+#         # 6. Get Cycli associated with these VluchtCycli
+#         cycli = []
+#         if vlucht_cyclus_ids:
+#              response = supabase.table("Cyclus").select("*").in_("VluchtCyclusId", list(vlucht_cyclus_ids)).execute()
+#              cycli = response.data
+#
+#         # 7. Get DockingCycli associated with these Cycli (more complex, maybe aggregate later)
+#         # ...
+#
+#         overview = {
+#             "event": event,
+#             "zones": zones,
+#             "vlucht_cycli_count": len(vlucht_cycli),
+#             "associated_drones": drones, # Or just count/status summary
+#             "associated_startplaatsen": startplaatsen, # Or just count/availability summary
+#             "associated_cycli_count": len(cycli),
+#             # Add more aggregated stats as needed
+#         }
+#         return jsonify(overview)
+#
 #     except Exception as e:
-#         app.logger.error(f"Error getting docking stations: {e}\n{traceback.format_exc()}")
-#         return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+#          return handle_error(e, f"Error generating event overview for {event_id}")
 
-# @app.route('/api/docking', methods=['POST'])
-# def create_docking_station():
-#     # Similar logic to create_startplaats using 'locatie' and 'isbeschikbaar'
-#     pass
-
-
-# --- Dashboard Routes (Commented Out - Need Redesign Based on Corrected Schema) ---
-# These routes heavily rely on relationships/helpers that were incorrect based on the DB schema review.
-# They need to be redesigned to fetch and aggregate data based on the *actual* relationships.
-"""
-@app.route('/api/dashboard/event-overview/<int:event_id>', methods=['GET'])
-def get_event_overview(event_id):
-    # PROBLEM: Relies on get_startplaatsen_by_event, get_docking_stations_by_event,
-    # get_cycli_by_event, get_active_drones_by_event which are likely incorrect/non-existent
-    # based on the actual DB schema. Needs complete rewrite using valid joins/queries.
-    app.logger.warning("Route /api/dashboard/event-overview needs redesign based on DB schema")
-    return jsonify({"error": "Route under construction due to schema mismatch"}), 501 # 501 Not Implemented
 
 @app.route('/api/dashboard/drone-status', methods=['GET'])
 def get_drone_status():
-    # PROBLEM: get_active_drones_by_event likely incorrect. Aggregation logic might be okay
-    # if based on get_all_drones, but event filtering is suspect.
-    app.logger.warning("Route /api/dashboard/drone-status needs review for event filtering based on DB schema")
+    # This dashboard provides overall drone status, not specific to an event
+    # (as Drone table doesn't link directly to Evenement)
+    app.logger.info("GET /api/dashboard/drone-status")
     try:
-        # Fetch all drones for now, ignore event_id filtering until relationship is clear
         drones = DroneHelper.get_all_drones()
-        status_counts = {}
+        status_counts = {status: 0 for status in DroneHelper.VALID_STATUSES}
         total_battery = 0
         count_with_battery = 0
+        operational_drones = 0
+        ready_to_fly_drones = 0
+
         for drone in drones:
             status = drone.get('status', 'Unknown')
-            status_counts[status] = status_counts.get(status, 0) + 1
+            if status in status_counts:
+                status_counts[status] += 1
+            else: # Should not happen if VALID_STATUSES is correct
+                status_counts['Unknown'] = status_counts.get('Unknown', 0) + 1
+
             battery = drone.get('batterij') # Correct key from DB
             if battery is not None:
                  total_battery += battery
                  count_with_battery += 1
 
-        avg_battery = total_battery / count_with_battery if count_with_battery > 0 else 0
+            if status == 'AVAILABLE':
+                 operational_drones += 1
+                 if drone.get('magOpstijgen') is True:
+                     ready_to_fly_drones +=1
+            elif status == 'IN_USE':
+                 operational_drones += 1
+
+
+        avg_battery = round(total_battery / count_with_battery) if count_with_battery > 0 else 0
 
         return jsonify({
             "total_drones": len(drones),
             "status_distribution": status_counts,
-            "average_battery_level": avg_battery,
-            "drones": drones # Maybe remove this if the list is large
+            "average_battery_level_percent": avg_battery,
+            "operational_drones": operational_drones,
+            "ready_to_fly_drones": ready_to_fly_drones,
+            # "drones": drones # Maybe remove this if the list is large and sensitive
         })
     except Exception as e:
-        app.logger.error(f"Error getting drone status dashboard: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 500
+        return handle_error(e, "Error getting drone status dashboard")
 
 
-@app.route('/api/dashboard/cyclus-overview/<int:cyclus_id>', methods=['GET'])
-def get_cyclus_overview(cyclus_id):
-     # PROBLEM: Relies on potentially non-existent helpers like get_vlucht_cycli_by_cyclus
-     # and get_docking_cycli_by_cyclus. DockingCyclus link IS valid, VluchtCyclus is NOT.
-     app.logger.warning("Route /api/dashboard/cyclus-overview needs redesign based on DB schema (VluchtCyclus relationship)")
-     try:
-         cyclus = CyclusHelper.get_cyclus_by_id(cyclus_id)
-         if not cyclus:
-             return jsonify({"error": "Cyclus not found"}), 404
+# THIS ROUTE IS PROBLEMATIC / NEEDS REDESIGN:
+# The original assumes relationships that don't exist (e.g., multiple VluchtCycli per Cyclus).
+# Correct relationship: Cyclus *can* have ONE VluchtCyclusId. DockingCyclus links to Cyclus.
+# So an overview for a Cyclus should show its details, its *single* linked VluchtCyclus (if any),
+# and all DockingCycli linked to it.
+# @app.route('/api/dashboard/cyclus-overview/<int:cyclus_id>', methods=['GET'])
+# def get_cyclus_overview(cyclus_id):
+#      app.logger.warning("Route /api/dashboard/cyclus-overview needs careful redesign based on DB schema")
+#      try:
+#          cyclus = CyclusHelper.get_cyclus_by_id(cyclus_id)
+#          if not cyclus:
+#              return jsonify({"error": "Cyclus not found"}), 404
+#
+#          # Fetch DockingCycli linked TO this Cyclus (Correct relationship)
+#          docking_cycli_list = DockingCyclusHelper.get_docking_cycli_by_cyclus(cyclus_id)
+#
+#          # Fetch the SINGLE VluchtCyclus associated via Cyclus.VluchtCyclusId (if exists)
+#          vlucht_cyclus_id = cyclus.get("VluchtCyclusId")
+#          vlucht_cyclus_details = None
+#          if vlucht_cyclus_id:
+#              vlucht_cyclus_details = VluchtCyclusHelper.get_vlucht_cyclus_by_id(vlucht_cyclus_id)
+#              # Optionally enrich VluchtCyclus details (e.g., fetch linked Drone/Zone/Verslag names)
+#              # if vlucht_cyclus_details:
+#              #    drone_id = vlucht_cyclus_details.get('DroneId')
+#              #    if drone_id: vlucht_cyclus_details['drone_info'] = DroneHelper.get_drone_by_id(drone_id)
+#              #    # ... similar for zone, verslag, plaats ...
+#
+#          # Aggregate data based on available info
+#          # Example: Get unique drones involved in docking for this cyclus
+#          docking_drone_ids = {dc['DroneId'] for dc in docking_cycli_list if dc.get('DroneId')}
+#          docking_drones = []
+#          if docking_drone_ids:
+#              response = supabase.table("Drone").select("Id, status").in_("Id", list(docking_drone_ids)).execute()
+#              docking_drones = response.data
+#
+#          overview = {
+#              "cyclus": cyclus,
+#              "associated_vlucht_cyclus": vlucht_cyclus_details,
+#              "docking_info": {
+#                   "total_docking_events": len(docking_cycli_list),
+#                   "involved_drones": docking_drones, # List of drones involved in docking
+#                   "docking_cycli_records": docking_cycli_list # Full records if needed
+#              }
+#          }
+#          return jsonify(overview)
+#      except Exception as e:
+#         return handle_error(e, f"Error getting cyclus overview dashboard for {cyclus_id}")
 
-         # Fetch DockingCycli (Correct relationship)
-         docking_cycli = DockingCyclusHelper.get_docking_cycli_by_cyclus(cyclus_id) # Assuming helper exists
-
-         # Fetch VluchtCycli associated via Cyclus.VluchtCyclusId (if exists)
-         vlucht_cyclus_id = cyclus.get("VluchtCyclusId")
-         vlucht_cycli_details = None
-         if vlucht_cyclus_id:
-             vlucht_cycli_details = VluchtCyclusHelper.get_vlucht_cyclus_by_id(vlucht_cyclus_id)
-
-         # Aggregate data based on available info
-         docking_status_counts = {} # Example aggregation
-         for dc in docking_cycli:
-             # Need status field IN DockingCyclus table for this to work
-             status = dc.get('status', 'Unknown')
-             docking_status_counts[status] = docking_status_counts.get(status, 0) + 1
-
-         overview = {
-             "cyclus": cyclus,
-             "stats": {
-                 "total_docking_cycli": len(docking_cycli),
-                 # Add other relevant stats based on actual Cyclus/DockingCyclus fields
-                 "docking_status_distribution": docking_status_counts, # IF status exists
-             },
-             "associated_vlucht_cyclus": vlucht_cycli_details, # Show the single associated one
-             "docking_cycli": docking_cycli,
-         }
-         return jsonify(overview)
-     except Exception as e:
-        app.logger.error(f"Error getting cyclus overview dashboard for {cyclus_id}: {e}\n{traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 500
-"""
 
 # Run the application
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5328))
-    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-    # Configure logging for better debugging
-    if not app.debug:
-        import logging
-        # Log to stdout
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.INFO)
-        app.logger.addHandler(stream_handler)
-        app.logger.setLevel(logging.INFO)
-        app.logger.info('Flask app started')
-    else:
-         app.logger.setLevel(logging.DEBUG)
-         app.logger.info('Flask app started in DEBUG mode')
+    # Use FLASK_DEBUG env var for debug mode control
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
 
-    app.run(host='0.0.0.0', port=port, debug=debug)
+    app.logger.info(f'Flask app starting on port {port} in {"DEBUG" if debug_mode else "PRODUCTION"} mode')
+    # host='0.0.0.0' makes it accessible externally, use '127.0.0.1' for local only
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
