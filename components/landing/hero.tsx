@@ -60,8 +60,7 @@ export default function Hero() {
               </Button>
               <Button
                 size="lg"
-                variant="outline"
-                className="border-white text-blue-700 hover:bg-white/10"
+                className="gap-2 bg-white border-white text-blue-700 hover:bg-white/10"
               >
                 Request Demo
               </Button>
