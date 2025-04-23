@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Drone } from '@/app/types';
 import { PlusCircle } from 'lucide-react';
+import useDrones from '@/hooks/useDrones';
 
 // You might want to use react-hook-form for more robust validation
 // import { useForm } from "react-hook-form";
@@ -57,55 +58,9 @@ export function AddDroneDialog() {
       setFormData(prev => ({ ...prev, status: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-
-    // Basic validation
-    if (formData.batterij === undefined || formData.batterij < 0 || formData.batterij > 100) {
-        setError("Battery must be between 0 and 100.");
-        setIsLoading(false);
-        return;
-    }
-    if (!formData.status) {
-        setError("Status is required.");
-        setIsLoading(false);
-        return;
-    }
-
-    // Prepare data for API (match expected fields in api/app.py create_drone)
-    const apiData = {
-        status: formData.status,
-        batterij: formData.batterij, // API expects 'batterij'
-        magOpstijgen: formData.magOpstijgen, // API expects 'magOpstijgen'
-    };
-
-
-    try {
-      const response = await fetch('/api/drones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
-      // Success
-      setIsOpen(false); // Close dialog
-      setFormData({ status: 'OFFLINE', magOpstijgen: false, batterij: 0 }); // Reset form
-      alert('Drone added successfully!');
-      // TODO: Ideally refresh data without full page reload
-       window.location.reload(); // Simple refresh
-    } catch (err: any) {
-      setError(err.message || "An unknown error occurred.");
-      console.error("Error adding drone:", err);
-    } finally {
-      setIsLoading(false);
-    }
+    useDrones.handleAddDrone(formData as Drone, setIsLoading, setError, setIsOpen, setFormData);
   };
 
   return (
