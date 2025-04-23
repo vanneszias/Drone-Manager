@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { VluchtCyclus } from '@/app/types';
 import { PlusCircle } from 'lucide-react';
+
 import useVluchtCyclus from '@/hooks/useVluchtCyclus';
 
 type VluchtCyclusFormData = {
@@ -34,6 +35,7 @@ export function AddVluchtCyclusDialog() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const { handleAddVluchtCyclus } = useVluchtCyclus;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,11 +49,18 @@ export function AddVluchtCyclusDialog() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     handleAddVluchtCyclus(
-      formData as VluchtCyclus, 
-      setIsLoading, 
-      setError, 
-      setIsOpen, 
-      setFormData
+      formData as VluchtCyclus,
+      setIsLoading,
+      setError,
+      setIsOpen,
+      () => {
+        setFormData({
+          VerslagId: 0,
+          PlaatsId: 0,
+          DroneId: 0,
+          ZoneId: 0
+        });
+      }
     );
   };
 
