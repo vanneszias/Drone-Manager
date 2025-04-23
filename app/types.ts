@@ -36,6 +36,13 @@ export interface Zone {
   status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
 }
 
+// Define and export the Docking type
+export interface Docking {
+  id: number;
+  naam: string;
+  locatie: string;
+}
+
 export interface Event {
   id: number;
   naam: string;
