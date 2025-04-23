@@ -14,13 +14,14 @@ import {
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2 } from 'lucide-react';
-import { handleDelete, handleAddVluchtCyclus, getVluchtCycli } from '@/hooks/useVluchtCyclus';
+import useVluchtCyclus from '@/hooks/useVluchtCyclus';
 
 interface VluchtCyclusListProps {
     vluchtCycli: VluchtCyclus[];
 }
 
 export default function VluchtCyclusList({ vluchtCycli }: VluchtCyclusListProps) {
+    const { handleDelete } = useVluchtCyclus;
     if (!vluchtCycli || vluchtCycli.length === 0) {
         return <p className="text-muted-foreground">No flight cycles found.</p>;
     }
