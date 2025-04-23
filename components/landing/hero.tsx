@@ -51,6 +51,7 @@ export default function Hero() {
               Monitor, manage, and optimize your drone operations with our comprehensive platform. Real-time tracking, maintenance alerts, and flight analytics all in one place.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
+<<<<<<< HEAD
               <Button
                 size="lg"
                 className="gap-2 bg-white border-white text-blue-700 hover:bg-white/10"
@@ -64,6 +65,24 @@ export default function Hero() {
               >
                 Request Demo
               </Button>
+=======
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button
+                  size="lg"
+                  className="gap-2 bg-white/70 border-white/60 text-blue-700 hover:bg-white/10"
+                  onClick={() => router.push("/dashboard")}
+                >
+                  Get Started <ArrowRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="lg"
+                  className="gap-2 bg-white/70 border-white/60 text-blue-700 hover:bg-white/10"
+                >
+                  Request Demo
+                </Button>
+              </div>
+
+>>>>>>> 24cf59a145484984681e3da2e425e02ac2b39103
             </div>
           </div>
         </div>
