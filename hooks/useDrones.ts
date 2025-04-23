@@ -2,6 +2,16 @@ import { Drone } from '@/app/types';
 
 const apiUrl = 'https://drone.ziasvannes.tech/api/drones';
 
+// Type for data sent to API (snake_case keys)
+interface DroneApiInput {
+  status: Drone['status'];
+  batterij: number;
+  magOpstijgen: boolean;
+}
+
+// Type for the reset function argument
+type ResetDroneForm = (formData: Partial<Drone>) => void;
+
 // Function to fetch drones from your API
 async function getDrones(): Promise<Drone[]> {
   console.log(`Server-side fetch initiated for: ${apiUrl}`); // Add logging
@@ -35,7 +45,14 @@ async function getDrones(): Promise<Drone[]> {
 
     const data = await res.json();
     console.log(`Successfully fetched and parsed data from ${apiUrl}`);
-    return data as Drone[];
+    // Map API response (PascalCase magOpstijgen) to frontend type (camelCase)
+    return data.map((item: any) => ({
+      id: item.Id,
+      status: item.status,
+      batterij: item.batterij,
+      magOpstijgen: item.magOpstijgen // Ensure this matches the frontend type
+    })) as Drone[];
+
 
   } catch (error) {
     console.error(`Error in getDrones fetching ${apiUrl}:`, error);
@@ -53,8 +70,12 @@ const handleDelete = async (id: number) => {
       // TODO: Refresh data - Need a better way, e.g., router.refresh() or state management
       window.location.reload(); // Simple but not ideal
     } else {
-      const errorData = await res.json();
-      alert(`Failed to delete drone: ${errorData.error || res.statusText}`);
+      let errorMsg = `Failed to delete drone (${res.status})`;
+      try {
+        const errorData = await res.json();
+        errorMsg = errorData.error || errorMsg;
+      } catch (e) { /* Ignore if response not JSON */ }
+      alert(errorMsg);
     }
   } catch (error) {
     console.error("Error deleting drone:", error);
@@ -62,28 +83,27 @@ const handleDelete = async (id: number) => {
   }
 };
 
-const handleAddDrone = async (formData: Drone, setIsLoading: (isLoading: boolean) => void, setError: (error: string | null) => void, setIsOpen: (isOpen: boolean) => void, setFormData: (formData: Drone) => void) => {
+const handleAddDrone = async (
+  apiData: DroneApiInput, // Expect snake_case data
+  setIsLoading: (isLoading: boolean) => void,
+  setError: (error: string | null) => void,
+  setIsOpen: (isOpen: boolean) => void,
+  setFormData: ResetDroneForm // Use the specific reset function type
+) => {
   setIsLoading(true);
   setError(null);
 
   // Basic validation
-  if (formData.batterij === undefined || formData.batterij < 0 || formData.batterij > 100) {
+  if (apiData.batterij === undefined || apiData.batterij < 0 || apiData.batterij > 100) {
     setError("Battery must be between 0 and 100.");
     setIsLoading(false);
     return;
   }
-  if (!formData.status) {
+  if (!apiData.status) {
     setError("Status is required.");
     setIsLoading(false);
     return;
   }
-
-  // Prepare data for API (match expected fields in api/app.py create_drone)
-  const apiData = {
-    status: formData.status,
-    batterij: formData.batterij, // API expects 'batterij'
-    magOpstijgen: formData.magOpstijgen, // API expects 'magOpstijgen'
-  };
 
 
   try {
@@ -94,13 +114,17 @@ const handleAddDrone = async (formData: Drone, setIsLoading: (isLoading: boolean
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      let errorMsg = `Failed to add drone (${response.status})`;
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorMsg;
+      } catch (e) { /* Ignore if response not JSON */ }
+      throw new Error(errorMsg);
     }
 
     // Success
     setIsOpen(false); // Close dialog
-    setFormData({ status: 'OFFLINE', magOpstijgen: false, batterij: 0, id: 0 }); // Reset form
+    setFormData({ status: 'OFFLINE', magOpstijgen: false, batterij: 0 }); // Reset form state
     alert('Drone added successfully!');
     // TODO: Ideally refresh data without full page reload
     window.location.reload(); // Simple refresh

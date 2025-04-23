@@ -16,18 +16,19 @@ import { Label } from "@/components/ui/label";
 import { PlusCircle } from "lucide-react";
 import useDockings from "@/hooks/useDockings";
 
+// Matches the data structure expected by the API
 type DockingFormData = {
-  id: number;
-  naam: string;
   locatie: string;
+  isbeschikbaar: boolean;
 };
 
 export function AddDockingDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<DockingFormData>>({
-    naam: "",
     locatie: "",
+    isbeschikbaar: true, // Default to available
   });
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,14 +40,21 @@ export function AddDockingDialog() {
     }));
   };
 
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      isbeschikbaar: e.target.checked,
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     useDockings.handleAddDocking(
-      formData as DockingFormData,
+      formData as DockingFormData, // Cast to full type, ensure validation covers missing fields
       setIsLoading,
       setError,
       setIsOpen,
-      setFormData
+      (resetData) => setFormData(resetData as DockingFormData) // Use cast for reset function
     );
   };
 
@@ -67,18 +75,6 @@ export function AddDockingDialog() {
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="naam" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="naam"
-                value={formData.naam || ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="locatie" className="text-right">
                 Location
               </Label>
@@ -89,6 +85,19 @@ export function AddDockingDialog() {
                 className="col-span-3"
                 required
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="isbeschikbaar" className="text-right">
+                Available
+              </Label>
+              <input
+                id="isbeschikbaar"
+                type="checkbox"
+                checked={formData.isbeschikbaar ?? true}
+                onChange={handleCheckboxChange}
+                className="col-span-3 h-4 w-4 justify-self-start"
+              />
+              {/* Consider using Shadcn Checkbox for consistency */}
             </div>
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
