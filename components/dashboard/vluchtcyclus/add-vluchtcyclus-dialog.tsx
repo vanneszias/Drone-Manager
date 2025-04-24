@@ -101,9 +101,9 @@ export function AddVluchtCyclusDialog() {
 
     // At least one ID should be provided for a meaningful record
     if (
-      !apiData.verslag_id &&
-      !apiData.plaats_id &&
-      !apiData.drone_id &&
+      !apiData.verslag_id ||
+      !apiData.plaats_id ||
+      !apiData.drone_id ||
       !apiData.zone_id
     ) {
       setError(

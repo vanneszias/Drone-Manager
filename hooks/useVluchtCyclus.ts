@@ -144,13 +144,7 @@ const handleUpdateVluchtCyclus = async (
     }
 
     setIsOpen(false);
-    setFormData({
-      Id: 0,
-      VerslagId: null,
-      PlaatsId: null,
-      DroneId: null,
-      ZoneId: null,
-    } as VluchtCyclus);
+    setFormData({} as VluchtCyclus);
 
     alert("Flight cycle successfully updated!");
     window.location.reload();
