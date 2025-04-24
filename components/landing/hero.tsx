@@ -58,12 +58,7 @@ export default function Hero() {
               >
                 Get Started <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button
-                size="lg"
-                className="gap-2 bg-white border-white text-blue-700 hover:bg-white/10"
-              >
-                Request Demo
-              </Button>
+              
             </div>
           </div>
         </div>
