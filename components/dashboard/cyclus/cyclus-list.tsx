@@ -10,7 +10,6 @@ import {
   TableHead,
   TableRow,
   TableCell,
-  TableCaption,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
@@ -91,7 +90,7 @@ export default function CyclusList({ cycli }: CyclusListProps) {
               <TableCell>{cyclus.startuur}</TableCell>
               <TableCell>{cyclus.tijdstip}</TableCell>
               <TableCell>
-                {getVluchtCyclusDetails(cyclus.VluchtCyclusId)}
+                {getVluchtCyclusDetails(cyclus.vluchtcyclus_id)}
               </TableCell>
               <TableCell className="text-right">
                 <Button
