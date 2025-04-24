@@ -19,26 +19,27 @@ import useCyclus from "@/hooks/useCyclus";
 
 type CyclusFormData = {
   startuur: string;
-  tijdsduur: string;
-  vluchtcyclusId: number;
+  tijdstip: string;
+  vluchtcyclusId?: number | null;
 };
 
 export function AddCyclusDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<CyclusFormData>({
-    startuur: '',
-    tijdsduur: '',
-    vluchtcyclusId: 0
-  });
+    startuur: "",
+    tijdstip: "",
+    vluchtcyclusId: null,
+  } as CyclusFormData & Cyclus); // Ensure formData is of type CyclusFormData
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { handleAddCyclus } = useCyclus;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value, type } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [id]: type === 'number' ? Number(value) : value,
+      [id]: type === "number" ? Number(value) : value,
     }));
   };
 
@@ -84,13 +85,13 @@ export function AddCyclusDialog() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tijdsduur" className="text-right">
-                Tijdsduur
+              <Label htmlFor="tijdstip" className="text-right">
+                Tijdstip
               </Label>
               <Input
-                id="tijdsduur"
+                id="tijdstip"
                 type="text"
-                value={formData.tijdsduur}
+                value={formData.tijdstip}
                 onChange={handleInputChange}
                 className="col-span-3"
                 placeholder="HH:mm:ss"
@@ -105,18 +106,20 @@ export function AddCyclusDialog() {
                 id="vluchtcyclusId"
                 type="number"
                 min="0"
-                value={formData.vluchtcyclusId}
+                value={formData.vluchtcyclusId || ""}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
               />
             </div>
           </div>
-          {error && (
-            <p className="text-sm text-red-500 mb-4">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+            >
               Annuleren
             </Button>
             <Button type="submit" disabled={isLoading}>
