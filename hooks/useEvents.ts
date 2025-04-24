@@ -74,11 +74,11 @@ const handleAddEvent = async (
         Accept: "application/json",
       },
       body: JSON.stringify({
-        naam: formData.Naam,
-        start_datum: formData.StartDatum,
-        eind_datum: formData.EindDatum,
-        start_tijd: formData.StartTijd,
-        tijdsduur: formData.Tijdsduur,
+        Naam: formData.Naam,
+        StartDatum: formData.StartDatum,
+        EindDatum: formData.EindDatum,
+        StartTijd: formData.StartTijd,
+        Tijdsduur: formData.Tijdsduur,
       }),
     });
 
@@ -126,11 +126,11 @@ const handleUpdateEvent = async (
         Accept: "application/json",
       },
       body: JSON.stringify({
-        naam: formData.Naam,
-        start_datum: formData.StartDatum,
-        eind_datum: formData.EindDatum,
-        start_tijd: formData.StartTijd,
-        tijdsduur: formData.Tijdsduur,
+        Naam: formData.Naam,
+        StartDatum: formData.StartDatum,
+        EindDatum: formData.EindDatum,
+        StartTijd: formData.StartTijd,
+        Tijdsduur: formData.Tijdsduur,
       }),
     });
 
