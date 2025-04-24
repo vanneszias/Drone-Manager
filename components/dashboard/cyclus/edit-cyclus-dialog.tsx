@@ -36,13 +36,17 @@ export function EditCyclusDialog({
 }: EditCyclusDialogProps) {
   const { handleUpdateCyclus } = useCyclus;
   const { getVluchtCycli } = useVluchtCyclus;
-  const [formData, setFormData] = useState<Cyclus>(cyclus);
+  const [formData, setFormData] = useState<Cyclus>({
+    ...cyclus,
+  });
   const [vluchtCycli, setVluchtCycli] = useState<VluchtCyclus[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setFormData(cyclus);
+    setFormData({
+      ...cyclus,
+    });
   }, [cyclus]);
 
   useEffect(() => {
@@ -85,7 +89,7 @@ export function EditCyclusDialog({
       return;
     }
     if (!formData.tijdstip) {
-      setError("Time is required");
+      setError("Time duration is required");
       return;
     }
 
@@ -123,11 +127,11 @@ export function EditCyclusDialog({
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tijdsduur" className="text-right">
-                Tijdsduur
+              <Label htmlFor="tijdstip" className="text-right">
+                Tijdstip
               </Label>
               <Input
-                id="tijdsduur"
+                id="tijdstip"
                 type="time"
                 value={formData.tijdstip}
                 onChange={handleInputChange}
