@@ -47,7 +47,6 @@ export default function ZoneList({ zones }: ZoneListProps) {
   return (
     <>
       <Table>
-        <TableCaption>Een lijst van alle zones.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>

@@ -48,7 +48,6 @@ export default function DockingList({ dockings }: DockingListProps) {
   return (
     <>
       <Table>
-        <TableCaption>Een lijst van alle dockings.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>

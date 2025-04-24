@@ -61,7 +61,6 @@ export default function EventList({ events }: EventListProps) {
   return (
     <>
       <Table>
-        <TableCaption>Een lijst van alle evenementen.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>

@@ -50,7 +50,6 @@ export default function DockingCyclusList({
   return (
     <>
       <Table>
-        <TableCaption>Een lijst van alle docking cycli.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>

@@ -51,7 +51,6 @@ export default function StartplaatsList({
   return (
     <>
       <Table>
-        <TableCaption>Een lijst van alle startplaatsen.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>

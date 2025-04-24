@@ -47,7 +47,6 @@ export default function CyclusList({ cycli }: CyclusListProps) {
   return (
     <>
       <Table>
-        <TableCaption>Een lijst van alle cycli.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>
