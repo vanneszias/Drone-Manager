@@ -2,7 +2,7 @@ import { DockingCyclus, Drone, Docking, Cyclus } from "@/app/types";
 
 const apiUrl = "https://drone.ziasvannes.tech/api/docking-cycli";
 const dronesApiUrl = "https://drone.ziasvannes.tech/api/drones";
-const dockingsApiUrl = "https://drone.ziasvannes.tech/api/dockings";
+const dockingsApiUrl = "https://drone.ziasvannes.tech/api/docking";
 const cyclusApiUrl = "https://drone.ziasvannes.tech/api/cycli";
 
 async function getDockingCycli(): Promise<DockingCyclus[]> {

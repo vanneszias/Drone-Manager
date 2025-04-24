@@ -13,8 +13,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Verslag } from "@/app/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Verslag, VluchtCyclus } from "@/app/types";
 import useVerslag from "@/hooks/useVerslag";
+import useVluchtCyclus from "@/hooks/useVluchtCyclus";
 
 interface EditVerslagDialogProps {
   verslag: Verslag;
@@ -30,10 +38,26 @@ export function EditVerslagDialog({
   const [formData, setFormData] = useState<Verslag>(verslag);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [vluchtCycli, setVluchtCycli] = useState<VluchtCyclus[]>([]);
+  const { getVluchtCycli } = useVluchtCyclus;
 
   useEffect(() => {
     setFormData(verslag);
   }, [verslag]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const loadVluchtCycli = async () => {
+        try {
+          const data = await getVluchtCycli();
+          setVluchtCycli(data);
+        } catch (error) {
+          console.error("Error loading vluchtcycli:", error);
+        }
+      };
+      loadVluchtCycli();
+    }
+  }, [isOpen]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -43,6 +67,13 @@ export function EditVerslagDialog({
       ...prev,
       [id]:
         type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+    }));
+  };
+
+  const handleVluchtCyclusChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      VluchtCyclusId: value === "none" ? null : parseInt(value),
     }));
   };
 
@@ -129,17 +160,26 @@ export function EditVerslagDialog({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="VluchtCyclusId" className="text-right">
-                Flight Cycle ID
+                Flight Cycle
               </Label>
-              <Input
-                id="VluchtCyclusId"
-                type="number"
-                min="1"
-                value={formData.VluchtCyclusId || ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="Optional"
-              />
+              <Select
+                value={formData.VluchtCyclusId?.toString() || "none"}
+                onValueChange={handleVluchtCyclusChange}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select Flight Cycle" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Flight Cycle</SelectItem>
+                  {vluchtCycli.map((vc) => (
+                    <SelectItem key={vc.Id} value={vc.Id.toString()}>
+                      Flight Cycle {vc.Id}
+                      {vc.DroneId ? ` (Drone ${vc.DroneId})` : ""}
+                      {vc.ZoneId ? ` - Zone ${vc.ZoneId}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
