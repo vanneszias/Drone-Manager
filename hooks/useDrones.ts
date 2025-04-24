@@ -104,8 +104,57 @@ const handleAddDrone = async (
   }
 };
 
+const handleUpdateDrone = async (
+  formData: Drone,
+  setIsLoading: (isLoading: boolean) => void,
+  setError: (error: string | null) => void,
+  setIsOpen: (isOpen: boolean) => void,
+  setFormData: (formData: Drone) => void
+) => {
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const response = await fetch(`${apiUrl}/${formData.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        status: formData.status,
+        batterij: formData.batterij,
+        magOpstijgen: formData.magOpstijgen,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || `Failed to update drone (${response.status})`
+      );
+    }
+
+    setIsOpen(false);
+    setFormData({
+      status: "AVAILABLE",
+      batterij: 100,
+      magOpstijgen: true,
+    } as Drone);
+
+    alert("Drone succesvol bijgewerkt!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error updating drone:", error);
+    setError(error instanceof Error ? error.message : "Failed to update drone");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 export default {
   getDrones,
   handleDelete,
   handleAddDrone,
+  handleUpdateDrone,
 };

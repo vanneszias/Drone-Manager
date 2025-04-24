@@ -111,8 +111,56 @@ const handleAddVluchtCyclus = async (
   }
 };
 
+const handleUpdateVluchtCyclus = async (
+  formData: VluchtCyclus,
+  setIsLoading: (isLoading: boolean) => void,
+  setError: (error: string | null) => void,
+  setIsOpen: (isOpen: boolean) => void,
+  setFormData: (formData: VluchtCyclus) => void
+) => {
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const response = await fetch(`${apiUrl}/${formData.Id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(formData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || `Failed to update vlucht cyclus (${response.status})`
+      );
+    }
+
+    setIsOpen(false);
+    setFormData({
+      VerslagId: null,
+      PlaatsId: null,
+      DroneId: null,
+      ZoneId: null,
+    } as VluchtCyclus);
+
+    alert("Vlucht cyclus succesvol bijgewerkt!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error updating vlucht cyclus:", error);
+    setError(
+      error instanceof Error ? error.message : "Failed to update vlucht cyclus"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 export default {
   getVluchtCycli,
   handleDelete,
   handleAddVluchtCyclus,
+  handleUpdateVluchtCyclus,
 };

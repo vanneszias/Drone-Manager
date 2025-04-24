@@ -109,8 +109,59 @@ const handleAddDockingCyclus = async (
   }
 };
 
+const handleUpdateCyclus = async (
+  formData: DockingCyclus,
+  setIsLoading: (isLoading: boolean) => void,
+  setError: (error: string | null) => void,
+  setIsOpen: (isOpen: boolean) => void,
+  setFormData: (formData: DockingCyclus) => void
+) => {
+  setIsLoading(true);
+  setError(null);
+  try {
+    const response = await fetch(`${apiUrl}/${formData.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        DroneId: formData.DroneId,
+        DockingId: formData.DockingId,
+        CyclusId: formData.CyclusId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error ||
+          `Failed to update docking cyclus (${response.status})`
+      );
+    }
+
+    setIsOpen(false);
+    setFormData({
+      DroneId: 0,
+      DockingId: 0,
+      CyclusId: 0,
+    } as DockingCyclus);
+
+    alert("Docking cyclus succesvol bijgewerkt!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error updating docking cyclus:", error);
+    setError(
+      error instanceof Error ? error.message : "Failed to update docking cyclus"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 export default {
   getDockingCycli,
   handleDelete,
   handleAddDockingCyclus,
+  handleUpdateCyclus,
 };

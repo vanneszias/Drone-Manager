@@ -104,8 +104,59 @@ const handleAddCyclus = async (
   }
 };
 
+const handleUpdateCyclus = async (
+  formData: Cyclus,
+  setIsLoading: (isLoading: boolean) => void,
+  setError: (error: string | null) => void,
+  setIsOpen: (isOpen: boolean) => void,
+  setFormData: (formData: Cyclus) => void
+) => {
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const response = await fetch(`${apiUrl}/${formData.Id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        startuur: formData.startuur,
+        tijdstip: formData.tijdstip,
+        VluchtCyclusId: formData.VluchtCyclusId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || `Failed to update cyclus (${response.status})`
+      );
+    }
+
+    setIsOpen(false);
+    setFormData({
+      startuur: "",
+      tijdstip: "",
+      VluchtCyclusId: null,
+    } as Cyclus);
+
+    alert("Cyclus succesvol bijgewerkt!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error updating cyclus:", error);
+    setError(
+      error instanceof Error ? error.message : "Failed to update cyclus"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 export default {
   getCycli,
   handleDelete,
   handleAddCyclus,
+  handleUpdateCyclus,
 };

@@ -102,8 +102,57 @@ const handleAddDocking = async (
   }
 };
 
+const handleUpdateDocking = async (
+  formData: Docking,
+  setIsLoading: (isLoading: boolean) => void,
+  setError: (error: string | null) => void,
+  setIsOpen: (isOpen: boolean) => void,
+  setFormData: (formData: Docking) => void
+) => {
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const response = await fetch(`${apiUrl}/${formData.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        locatie: formData.locatie,
+        isbeschikbaar: formData.isbeschikbaar,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || `Failed to update docking (${response.status})`
+      );
+    }
+
+    setIsOpen(false);
+    setFormData({
+      locatie: "",
+      isbeschikbaar: true,
+    } as Docking);
+
+    alert("Docking succesvol bijgewerkt!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error updating docking:", error);
+    setError(
+      error instanceof Error ? error.message : "Failed to update docking"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 export default {
   getDockings,
   handleDelete,
   handleAddDocking,
+  handleUpdateDocking,
 };
