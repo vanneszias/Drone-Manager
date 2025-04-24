@@ -941,31 +941,30 @@ def get_vlucht_cyclus(vlucht_cyclus_id):
 def create_vlucht_cyclus():
     data = request.get_json()
     app.logger.info(f"POST /api/vlucht-cycli data: {data}")
-    # No strictly required fields based on DB (all FKs nullable), but maybe enforce one?
     if not data: return jsonify({"error": "No input data provided"}), 400
 
     try:
-        # Extract optional FKs (expect snake_case from JSON)
-        fk_values = {}
-        param_map = {
-            'verslag_id': 'verslag_id', # JSON key -> helper param name
-            'plaats_id': 'plaats_id',
-            'drone_id': 'drone_id',
-            'zone_id': 'zone_id'
+        # At least one FK must be provided
+        fk_values = {
+            'verslag_id': None,
+            'plaats_id': None,
+            'drone_id': None,
+            'zone_id': None
         }
-        for json_key, helper_param in param_map.items():
-            val = data.get(json_key)
-            if val is not None:
-                try:
-                    fk_values[helper_param] = int(val)
-                except (ValueError, TypeError):
-                     raise ValueError(f"Invalid format for {json_key}, must be an integer or null")
-            else:
-                fk_values[helper_param] = None # Explicitly pass None
 
-        # Maybe require at least one FK to be provided?
-        # if not any(fk_values.values()):
-        #     return jsonify({"error": "At least one ID (verslag, plaats, drone, or zone) must be provided"}), 400
+        # Extract provided FKs
+        for key in fk_values.keys():
+            if key in data:
+                val = data[key]
+                if val is not None:
+                    try:
+                        fk_values[key] = int(val)
+                    except (ValueError, TypeError):
+                        raise ValueError(f"Invalid format for {key}, must be an integer")
+
+        # Check if at least one FK is provided with a value
+        if not any(val is not None for val in fk_values.values()):
+            return jsonify({"error": "At least one ID (verslag_id, plaats_id, drone_id, or zone_id) must be provided"}), 400
 
         vlucht_cyclus = VluchtCyclusHelper.create_vlucht_cyclus(**fk_values)
 
@@ -975,10 +974,10 @@ def create_vlucht_cyclus():
         else:
             app.logger.error("VluchtCyclusHelper.create_vlucht_cyclus returned None.")
             return jsonify({"error": "Failed to create VluchtCyclus (check reference IDs?)"}), 500
-    except (ValueError, TypeError) as ve:
-        return handle_error(ve, "Invalid ID format for VluchtCyclus", 400)
+    except ValueError as ve:
+        return handle_error(ve, str(ve), 400)
     except KeyError as ke:
-         return handle_error(ke, f"Missing field: {ke}", 400)
+        return handle_error(ke, f"Missing field: {ke}", 400)
     except Exception as e:
         return handle_error(e, "Error creating VluchtCyclus")
 
@@ -998,35 +997,53 @@ def update_vlucht_cyclus(vlucht_cyclus_id):
             'drone_id': 'DroneId',
             'zone_id': 'ZoneId'
         }
+
+        # Extract and validate each field if provided
         for json_key, db_key in param_map.items():
-             if json_key in data:
-                 val = data[json_key]
-                 if val is None:
-                     update_data[db_key] = None
-                 else:
-                     try:
-                         update_data[db_key] = int(val)
-                     except (ValueError, TypeError):
-                          raise ValueError(f"Invalid format for {json_key}, must be an integer or null")
+            if json_key in data:
+                val = data[json_key]
+                if val is None:
+                    update_data[db_key] = None
+                else:
+                    try:
+                        update_data[db_key] = int(val)
+                    except (ValueError, TypeError):
+                        raise ValueError(f"Invalid format for {json_key}, must be an integer or null")
 
         if not update_data:
-             return jsonify({"error": "No valid fields provided for update"}), 400
+            return jsonify({"error": "No valid fields provided for update"}), 400
+
+        # Get existing record to ensure we don't nullify all fields
+        existing = VluchtCyclusHelper.get_vlucht_cyclus_by_id(vlucht_cyclus_id)
+        if not existing:
+            return jsonify({"error": "VluchtCyclus not found"}), 404
+
+        # Merge existing non-null values with updates to ensure at least one FK remains
+        merged_data = {
+            'VerslagId': existing.get('VerslagId'),
+            'PlaatsId': existing.get('PlaatsId'),
+            'DroneId': existing.get('DroneId'),
+            'ZoneId': existing.get('ZoneId')
+        }
+        merged_data.update(update_data)
+
+        # Verify that at least one FK will remain non-null after update
+        if not any(val is not None for val in merged_data.values()):
+            return jsonify({"error": "Cannot update: at least one ID (verslag_id, plaats_id, drone_id, or zone_id) must remain set"}), 400
 
         vlucht_cyclus = VluchtCyclusHelper.update_vlucht_cyclus(
             vlucht_cyclus_id=vlucht_cyclus_id, **update_data
         )
+        
         if vlucht_cyclus:
-             app.logger.info(f"VluchtCyclus {vlucht_cyclus_id} updated successfully.")
-             return jsonify(vlucht_cyclus)
+            app.logger.info(f"VluchtCyclus {vlucht_cyclus_id} updated successfully.")
+            return jsonify(vlucht_cyclus)
         else:
-            existing = VluchtCyclusHelper.get_vlucht_cyclus_by_id(vlucht_cyclus_id)
-            if existing:
-                 app.logger.error(f"Update failed for existing VluchtCyclus {vlucht_cyclus_id}.")
-                 return jsonify({"error": "VluchtCyclus update failed (check reference IDs?)"}), 500
-            else:
-                return jsonify({"error": "VluchtCyclus not found"}), 404
-    except (ValueError, TypeError) as ve:
-        return handle_error(ve, "Invalid ID format for update", 400)
+            app.logger.error(f"Update failed for VluchtCyclus {vlucht_cyclus_id}.")
+            return jsonify({"error": "VluchtCyclus update failed (check reference IDs?)"}), 500
+
+    except ValueError as ve:
+        return handle_error(ve, str(ve), 400)
     except Exception as e:
         return handle_error(e, f"Error updating VluchtCyclus {vlucht_cyclus_id}")
 
@@ -1314,74 +1331,6 @@ def delete_docking_station(docking_id):
     except Exception as e:
         return handle_error(e, f"Error deleting docking station {docking_id}")
 
-
-# --- Dashboard Routes (Commented/Corrected) ---
-
-# THIS ROUTE IS PROBLEMATIC: Needs redesign based on actual DB schema.
-# Evenement does NOT directly link to Startplaats, Docking, or Drone.
-# Links are: Evenement -> Zone -> VluchtCyclus -> Drone/Startplaats
-#           Evenement -> Zone -> VluchtCyclus <- Cyclus -> DockingCyclus -> Drone/Docking
-# You need JOINs or multiple queries to gather this info.
-# @app.route('/api/dashboard/event-overview/<int:event_id>', methods=['GET'])
-# def get_event_overview(event_id):
-#     app.logger.warning("Route /api/dashboard/event-overview/<id> needs complete redesign based on DB schema")
-#     try:
-#         # 1. Get Event details
-#         event = EvenementHelper.get_event_by_id(event_id)
-#         if not event: return jsonify({"error": "Event not found"}), 404
-#
-#         # 2. Get Zones for this Event
-#         zones = ZoneHelper.get_zones_by_event(event_id)
-#         zone_ids = [z['Id'] for z in zones]
-#
-#         # 3. Get VluchtCycli associated with these Zones
-#         vlucht_cycli = []
-#         if zone_ids:
-#             # Need helper or direct query: VluchtCyclusHelper.get_vlucht_cycli_by_zone_ids(zone_ids)
-#             # Direct query example:
-#             response = supabase.table("VluchtCyclus").select("*").in_("ZoneId", zone_ids).execute()
-#             vlucht_cycli = response.data
-#
-#         # 4. Extract unique Drone IDs, Startplaats IDs from VluchtCycli
-#         drone_ids = {vc['DroneId'] for vc in vlucht_cycli if vc.get('DroneId')}
-#         startplaats_ids = {vc['PlaatsId'] for vc in vlucht_cycli if vc.get('PlaatsId')}
-#         vlucht_cyclus_ids = {vc['Id'] for vc in vlucht_cycli}
-#
-#         # 5. Get details for these Drones and Startplaatsen
-#         drones = []
-#         if drone_ids:
-#             response = supabase.table("Drone").select("*").in_("Id", list(drone_ids)).execute()
-#             drones = response.data
-#
-#         startplaatsen = []
-#         if startplaats_ids:
-#              response = supabase.table("Startplaats").select("*").in_("Id", list(startplaats_ids)).execute()
-#              startplaatsen = response.data
-#
-#         # 6. Get Cycli associated with these VluchtCycli
-#         cycli = []
-#         if vlucht_cyclus_ids:
-#              response = supabase.table("Cyclus").select("*").in_("VluchtCyclusId", list(vlucht_cyclus_ids)).execute()
-#              cycli = response.data
-#
-#         # 7. Get DockingCycli associated with these Cycli (more complex, maybe aggregate later)
-#         # ...
-#
-#         overview = {
-#             "event": event,
-#             "zones": zones,
-#             "vlucht_cycli_count": len(vlucht_cycli),
-#             "associated_drones": drones, # Or just count/status summary
-#             "associated_startplaatsen": startplaatsen, # Or just count/availability summary
-#             "associated_cycli_count": len(cycli),
-#             # Add more aggregated stats as needed
-#         }
-#         return jsonify(overview)
-#
-#     except Exception as e:
-#          return handle_error(e, f"Error generating event overview for {event_id}")
-
-
 @app.route('/api/dashboard/drone-status', methods=['GET'])
 def get_drone_status():
     # This dashboard provides overall drone status, not specific to an event
@@ -1427,56 +1376,6 @@ def get_drone_status():
         })
     except Exception as e:
         return handle_error(e, "Error getting drone status dashboard")
-
-
-# THIS ROUTE IS PROBLEMATIC / NEEDS REDESIGN:
-# The original assumes relationships that don't exist (e.g., multiple VluchtCycli per Cyclus).
-# Correct relationship: Cyclus *can* have ONE VluchtCyclusId. DockingCyclus links to Cyclus.
-# So an overview for a Cyclus should show its details, its *single* linked VluchtCyclus (if any),
-# and all DockingCycli linked to it.
-# @app.route('/api/dashboard/cyclus-overview/<int:cyclus_id>', methods=['GET'])
-# def get_cyclus_overview(cyclus_id):
-#      app.logger.warning("Route /api/dashboard/cyclus-overview needs careful redesign based on DB schema")
-#      try:
-#          cyclus = CyclusHelper.get_cyclus_by_id(cyclus_id)
-#          if not cyclus:
-#              return jsonify({"error": "Cyclus not found"}), 404
-#
-#          # Fetch DockingCycli linked TO this Cyclus (Correct relationship)
-#          docking_cycli_list = DockingCyclusHelper.get_docking_cycli_by_cyclus(cyclus_id)
-#
-#          # Fetch the SINGLE VluchtCyclus associated via Cyclus.VluchtCyclusId (if exists)
-#          vlucht_cyclus_id = cyclus.get("VluchtCyclusId")
-#          vlucht_cyclus_details = None
-#          if vlucht_cyclus_id:
-#              vlucht_cyclus_details = VluchtCyclusHelper.get_vlucht_cyclus_by_id(vlucht_cyclus_id)
-#              # Optionally enrich VluchtCyclus details (e.g., fetch linked Drone/Zone/Verslag names)
-#              # if vlucht_cyclus_details:
-#              #    drone_id = vlucht_cyclus_details.get('DroneId')
-#              #    if drone_id: vlucht_cyclus_details['drone_info'] = DroneHelper.get_drone_by_id(drone_id)
-#              #    # ... similar for zone, verslag, plaats ...
-#
-#          # Aggregate data based on available info
-#          # Example: Get unique drones involved in docking for this cyclus
-#          docking_drone_ids = {dc['DroneId'] for dc in docking_cycli_list if dc.get('DroneId')}
-#          docking_drones = []
-#          if docking_drone_ids:
-#              response = supabase.table("Drone").select("Id, status").in_("Id", list(docking_drone_ids)).execute()
-#              docking_drones = response.data
-#
-#          overview = {
-#              "cyclus": cyclus,
-#              "associated_vlucht_cyclus": vlucht_cyclus_details,
-#              "docking_info": {
-#                   "total_docking_events": len(docking_cycli_list),
-#                   "involved_drones": docking_drones, # List of drones involved in docking
-#                   "docking_cycli_records": docking_cycli_list # Full records if needed
-#              }
-#          }
-#          return jsonify(overview)
-#      except Exception as e:
-#         return handle_error(e, f"Error getting cyclus overview dashboard for {cyclus_id}")
-
 
 # Run the application
 if __name__ == '__main__':
