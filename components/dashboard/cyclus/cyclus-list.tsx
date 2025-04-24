@@ -39,16 +39,16 @@ export default function CyclusList({ cycli }: CyclusListProps) {
       </TableHeader>
       <TableBody>
         {cycli.map((cyclus) => (
-          <TableRow key={cyclus.id}>
-            <TableCell className="font-medium">{cyclus.id}</TableCell>
+          <TableRow key={cyclus.Id}>
+            <TableCell className="font-medium">{cyclus.Id}</TableCell>
             <TableCell>{cyclus.startuur}</TableCell>
-            <TableCell>{cyclus.tijdsduur}</TableCell>
-            <TableCell>{cyclus.vluchtcyclusId}</TableCell>
+            <TableCell>{cyclus.tijdstip}</TableCell>
+            <TableCell>{cyclus.VluchtCyclusId ?? "N/A"}</TableCell>
             <TableCell className="text-right">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleDelete(cyclus.id)}
+                onClick={() => handleDelete(cyclus.Id)}
               >
                 <TrashIcon className="h-4 w-4" />
                 <span className="sr-only">Verwijder cyclus</span>

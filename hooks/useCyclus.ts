@@ -1,30 +1,33 @@
-import { Cyclus } from '@/app/types';
+import { Cyclus } from "@/app/types";
 
-const apiUrl = 'https://drone.ziasvannes.tech/api/cyclus';
+const apiUrl = "https://drone.ziasvannes.tech/api/cyclus";
 
 async function getCycli(): Promise<Cyclus[]> {
   console.log(`Server-side fetch initiated for: ${apiUrl}`);
 
   try {
     const res = await fetch(apiUrl, {
-      cache: 'no-store',
+      cache: "no-store",
       headers: {
-        'Accept': 'application/json',
-      }
+        Accept: "application/json",
+      },
     });
 
     console.log(`Fetch response status from ${apiUrl}: ${res.status}`);
 
     if (!res.ok) {
       const errorText = await res.text();
-      console.error(`Error fetching ${apiUrl}: ${res.status} ${res.statusText}`);
+      console.error(
+        `Error fetching ${apiUrl}: ${res.status} ${res.statusText}`
+      );
       console.error(`Response body: ${errorText.substring(0, 500)}...`);
-      throw new Error(`Failed to fetch cycli. Status: ${res.status}. Check server logs.`);
+      throw new Error(
+        `Failed to fetch cycli. Status: ${res.status}. Check server logs.`
+      );
     }
 
     const data = await res.json();
     return data as Cyclus[];
-
   } catch (error) {
     console.error(`Error in getCycli:`, error);
     throw error;
@@ -33,17 +36,17 @@ async function getCycli(): Promise<Cyclus[]> {
 
 const handleDelete = async (id: number) => {
   if (!confirm(`Weet je zeker dat je cyclus ${id} wilt verwijderen?`)) return;
-  
+
   try {
     const res = await fetch(`${apiUrl}/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: {
-        'Accept': 'application/json',
-      }
+        Accept: "application/json",
+      },
     });
 
     if (!res.ok) {
-      throw new Error('Failed to delete cyclus');
+      throw new Error("Failed to delete cyclus");
     }
 
     window.location.reload();
@@ -65,36 +68,37 @@ const handleAddCyclus = async (
 
   try {
     const response = await fetch(apiUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({
         startuur: formData.startuur,
-        tijdsduur: formData.tijdsduur,
-        vluchtcyclusId: formData.vluchtcyclusId
-      })
+        tijdstip: formData.tijdstip,
+        VluchtCyclusId: formData.VluchtCyclusId,
+      }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `Failed to add cyclus (${response.status})`);
+      throw new Error(
+        errorData.error || `Failed to add cyclus (${response.status})`
+      );
     }
 
     setIsOpen(false);
     setFormData({
-      id: 0,
-      startuur: '',
-      tijdsduur: '',
-      vluchtcyclusId: 0
-    });
+      startuur: "",
+      tijdstip: "",
+      VluchtCyclusId: null,
+    } as Cyclus);
 
-    alert('Cyclus succesvol toegevoegd!');
+    alert("Cyclus succesvol toegevoegd!");
     window.location.reload();
   } catch (error) {
-    console.error('Error adding cyclus:', error);
-    setError(error instanceof Error ? error.message : 'Failed to add cyclus');
+    console.error("Error adding cyclus:", error);
+    setError(error instanceof Error ? error.message : "Failed to add cyclus");
   } finally {
     setIsLoading(false);
   }
@@ -103,5 +107,5 @@ const handleAddCyclus = async (
 export default {
   getCycli,
   handleDelete,
-  handleAddCyclus
+  handleAddCyclus,
 };

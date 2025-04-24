@@ -1,6 +1,6 @@
-import React from 'react';
-import Header from '@/components/global/header'; // Or a new DashboardHeader
-import Footer from '@/components/global/footer'; // Or remove if dashboard doesn't need it
+import React from "react";
+import Header from "@/components/global/header"; // Or a new DashboardHeader
+import Footer from "@/components/global/footer"; // Or remove if dashboard doesn't need it
 
 // Optional: Create a simple sidebar component later if needed
 // import Sidebar from '@/components/dashboard/sidebar';
@@ -17,18 +17,57 @@ export default function DashboardLayout({
         <aside className="w-64 border-r p-4 hidden md:block">
           <nav>
             {/* Navigation Links */}
-            <a href="/dashboard/event" className="block py-2 px-4 hover:bg-muted rounded">Events</a>
-            <a href='/dashboard/zones' className="block py-2 px-4 hover:bg-muted rounded">Zones</a>
-            <a href="/dashboard/drones" className="block py-2 px-4 hover:bg-muted rounded">Drones</a>
-            <a href="/dashboard/startplaats" className="block py-2 px-4 hover:bg-muted rounded">Startplaats</a>
-            <a href="/dashboard/vluchtcyclus" className="block py-2 px-4 hover:bg-muted rounded">Vlucht Cyclus</a>
-            <a href="/dashboard/dockings" className="block py-2 px-4 hover:bg-muted rounded">Dockings</a>
-            <a href="/dashboard/verslag" className="block py-2 px-4 hover:bg-muted rounded">Verslagen</a>
+            <a
+              href="/dashboard/event"
+              className="block py-2 px-4 hover:bg-muted rounded"
+            >
+              Events
+            </a>
+            <a
+              href="/dashboard/zones"
+              className="block py-2 px-4 hover:bg-muted rounded"
+            >
+              Zones
+            </a>
+            <a
+              href="/dashboard/drones"
+              className="block py-2 px-4 hover:bg-muted rounded"
+            >
+              Drones
+            </a>
+            <a
+              href="/dashboard/startplaats"
+              className="block py-2 px-4 hover:bg-muted rounded"
+            >
+              Startplaats
+            </a>
+            <a
+              href="/dashboard/vluchtcyclus"
+              className="block py-2 px-4 hover:bg-muted rounded"
+            >
+              Vlucht Cyclus
+            </a>
+            <a
+              href="/dashboard/cyclus"
+              className="block py-2 px-4 hover:bg-muted rounded"
+            >
+              Cyclus
+            </a>
+            <a
+              href="/dashboard/dockings"
+              className="block py-2 px-4 hover:bg-muted rounded"
+            >
+              Dockings
+            </a>
+            <a
+              href="/dashboard/verslag"
+              className="block py-2 px-4 hover:bg-muted rounded"
+            >
+              Verslagen
+            </a>
           </nav>
         </aside>
-        <main className="flex-1 p-4 md:p-8">
-          {children}
-        </main>
+        <main className="flex-1 p-4 md:p-8">{children}</main>
       </div>
       <Footer />
     </div>
