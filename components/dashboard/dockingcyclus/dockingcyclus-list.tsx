@@ -3,41 +3,59 @@
 import React from "react";
 import { DockingCyclus } from "@/app/types";
 
-type DockingCyclusListProps = {
+interface DockingCyclusListProps {
   dockingCycli: DockingCyclus[];
-};
+}
 
 export default function DockingCyclusList({
   dockingCycli,
 }: DockingCyclusListProps) {
   if (!dockingCycli || dockingCycli.length === 0) {
-    return (
-      <div className="text-center text-gray-500">
-        <p>No docking cycli available.</p>
-      </div>
-    );
+    return <p className="text-muted-foreground">Geen docking cycli gevonden.</p>;
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white border border-gray-200">
-        <thead>
-          <tr>
-            <th className="px-4 py-2 border-b">Location</th>
-            <th className="px-4 py-2 border-b">Capacity</th>
-            <th className="px-4 py-2 border-b">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {dockingCycli.map((cyclus) => (
-            <tr key={cyclus.id} className="hover:bg-gray-100">
-              <td className="px-4 py-2 border-b">{cyclus.locatie}</td>
-              <td className="px-4 py-2 border-b">{cyclus.capaciteit}</td>
-              <td className="px-4 py-2 border-b">{cyclus.status}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableCaption>Een lijst van alle docking cycli.</TableCaption>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[100px]">ID</TableHead>
+          <TableHead>Drone ID</TableHead>
+          <TableHead>Docking ID</TableHead>
+          <TableHead>Cyclus ID</TableHead>
+          <TableHead className="text-right">Acties</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {dockingCycli.map((dockingCyclus) => (
+          <TableRow key={dockingCyclus.Id}>
+            <TableCell className="font-medium">{dockingCyclus.Id}</TableCell>
+            <TableCell>{dockingCyclus.DroneId}</TableCell>
+            <TableCell>{dockingCyclus.DockingId}</TableCell>
+            <TableCell>{dockingCyclus.CyclusId}</TableCell>
+            <TableCell className="text-right">
+              <Button variant="ghost" size="icon" className="mr-2" disabled>
+                <Edit className="h-4 w-4" />
+                <span className="sr-only">Bewerken</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => useDockingCyclus.handleDelete(dockingCyclus.Id)}
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+                <span className="sr-only">Verwijderen</span>
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+      <TableFooter>
+        <TableRow>
+          <TableCell colSpan={4}>Totaal Docking Cycli</TableCell>
+          <TableCell className="text-right">{dockingCycli.length}</TableCell>
+        </TableRow>
+      </TableFooter>
+    </Table>
   );
 }

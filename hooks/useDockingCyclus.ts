@@ -1,4 +1,4 @@
-"use client";
+import { DockingCyclus } from '@/app/types';
 
 import { DockingCyclus } from "@/app/types";
 
@@ -25,7 +25,6 @@ async function getDockingCycli(): Promise<DockingCyclus[]> {
     }
 
     const data = await res.json();
-    return data as DockingCyclus[];
   } catch (error) {
     console.error(`Error in getDockingCycli:`, error);
     throw error;
