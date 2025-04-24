@@ -898,10 +898,10 @@ def get_vlucht_cycli():
         # Allow filtering by FKs in VluchtCyclus table
         filters = {}
         param_map = {
-            'drone_id': 'DroneId',
-            'zone_id': 'ZoneId',
-            'plaats_id': 'PlaatsId',
-            'verslag_id': 'VerslagId'
+            'DroneId': 'DroneId',
+            'ZoneId': 'ZoneId',
+            'PlaatsId': 'PlaatsId',
+            'VerslagId': 'VerslagId'
         }
         for param_key, db_col in param_map.items():
             param_val_str = request.args.get(param_key)
@@ -946,10 +946,10 @@ def create_vlucht_cyclus():
     try:
         # At least one FK must be provided
         fk_values = {
-            'verslag_id': None,
-            'plaats_id': None,
-            'drone_id': None,
-            'zone_id': None
+            'VerslagId': None,
+            'PlaatsId': None,
+            'DroneId': None,
+            'ZoneId': None
         }
 
         # Extract provided FKs
@@ -992,10 +992,10 @@ def update_vlucht_cyclus(vlucht_cyclus_id):
     try:
         # Map JSON snake_case keys to DB PascalCase keys
         param_map = {
-            'verslag_id': 'VerslagId',
-            'plaats_id': 'PlaatsId',
-            'drone_id': 'DroneId',
-            'zone_id': 'ZoneId'
+            'VerslagId': 'VerslagId',
+            'PlaatsId': 'PlaatsId',
+            'DroneId': 'DroneId',
+            'ZoneIdd': 'ZoneIdd'
         }
 
         # Extract and validate each field if provided
