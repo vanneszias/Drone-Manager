@@ -76,7 +76,7 @@ export function EditCyclusDialog({
   const handleSelectChange = (value: string) => {
     setFormData((prev) => ({
       ...prev,
-      vluchtcyclus_id: value ? parseInt(value) : null,
+      VluchtCyclusId: value ? parseInt(value) : null,
     }));
   };
 
@@ -140,11 +140,11 @@ export function EditCyclusDialog({
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="vluchtcyclus_select" className="text-right">
+              <Label htmlFor="VluchtCyclusId_select" className="text-right">
                 Vluchtcyclus
               </Label>
               <Select
-                value={formData.vluchtcyclus_id?.toString() || ""}
+                value={formData.VluchtCyclusId?.toString() || ""}
                 onValueChange={handleSelectChange}
               >
                 <SelectTrigger className="col-span-3">

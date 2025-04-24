@@ -87,7 +87,7 @@ export interface Cyclus {
   Id: number;
   startuur: string; // time string 'HH:MM:SS'
   tijdstip: string; // time string 'HH:MM:SS'
-  vluchtcyclus_id?: number | null;
+  VluchtCyclusId?: number | null;
 }
 
 export interface DockingCyclus {

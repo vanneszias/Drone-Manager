@@ -139,7 +139,7 @@ export default function CyclusList({ cycli }: CyclusListProps) {
               <TableCell>{cyclus.startuur}</TableCell>
               <TableCell>{cyclus.tijdstip}</TableCell>
               <TableCell>
-                {getVluchtCyclusDetails(cyclus.vluchtcyclus_id)}
+                {getVluchtCyclusDetails(cyclus.VluchtCyclusId)}
               </TableCell>
               <TableCell className="text-right">
                 <Button
