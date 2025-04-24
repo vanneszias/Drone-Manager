@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,27 +20,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Drone } from '@/app/types';
-import { PlusCircle } from 'lucide-react';
-import useDrones from '@/hooks/useDrones';
+import { Drone } from "@/app/types";
+import { PlusCircle } from "lucide-react";
+import useDrones from "@/hooks/useDrones";
 
 type DroneFormData = {
-  status: Drone['status'];
+  status: Drone["status"];
   batterij: number;
   magOpstijgen: boolean;
 };
 
 // Type for data sent to API
 type DroneApiInput = {
-  status: Drone['status'];
+  status: Drone["status"];
   batterij: number;
   magOpstijgen: boolean;
 };
 
 export function AddDroneDialog() {
   const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState<DroneFormData>({ // Use full type, provide defaults
-    status: 'OFFLINE', // Default status
+  const [formData, setFormData] = useState<DroneFormData>({
+    // Use full type, provide defaults
+    status: "OFFLINE", // Default status
     magOpstijgen: false,
     batterij: 100,
   });
@@ -49,14 +50,19 @@ export function AddDroneDialog() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [id]: type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value),
+      [id]:
+        type === "checkbox"
+          ? checked
+          : type === "number"
+          ? Number(value)
+          : value,
     }));
   };
 
-  const handleSelectChange = (value: Drone['status']) => {
-    setFormData(prev => ({ ...prev, status: value }));
+  const handleSelectChange = (value: Drone["status"]) => {
+    setFormData((prev) => ({ ...prev, status: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -67,7 +73,16 @@ export function AddDroneDialog() {
       batterij: formData.batterij,
       magOpstijgen: formData.magOpstijgen,
     };
-    useDrones.handleAddDrone(apiData, setIsLoading, setError, setIsOpen, () => setFormData({ status: 'OFFLINE', batterij: 0, magOpstijgen: false }));
+    useDrones.handleAddDrone(
+      {
+        ...apiData,
+        id: 0, // ID is not needed for new drone
+      },
+      setIsLoading,
+      setError,
+      setIsOpen,
+      () => setFormData({ status: "OFFLINE", batterij: 0, magOpstijgen: false })
+    );
   };
 
   return (
@@ -96,8 +111,13 @@ export function AddDroneDialog() {
                <Input id="model" value={formData.model || ''} onChange={handleInputChange} className="col-span-3" required />
              </div> */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">Status</Label>
-              <Select onValueChange={handleSelectChange} defaultValue={formData.status}>
+              <Label htmlFor="status" className="text-right">
+                Status
+              </Label>
+              <Select
+                onValueChange={handleSelectChange}
+                defaultValue={formData.status}
+              >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -110,20 +130,25 @@ export function AddDroneDialog() {
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="batterij" className="text-right">Battery (%)</Label>
+              <Label htmlFor="batterij" className="text-right">
+                Battery (%)
+              </Label>
               <Input
                 id="batterij"
                 type="number"
                 min="0"
                 max="100"
-                value={formData.batterij ?? ''}
+                value={formData.batterij ?? ""}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="mag_opstijgen" className="text-right">Ready for Takeoff</Label> {/* Keep UI ID camelCase for state */}
+              <Label htmlFor="mag_opstijgen" className="text-right">
+                Ready for Takeoff
+              </Label>{" "}
+              {/* Keep UI ID camelCase for state */}
               {/* Simple Checkbox - consider using Shadcn's Checkbox component */}
               <input
                 id="mag_opstijgen"
@@ -136,9 +161,15 @@ export function AddDroneDialog() {
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : 'Save Drone'}
+              {isLoading ? "Saving..." : "Save Drone"}
             </Button>
           </DialogFooter>
         </form>

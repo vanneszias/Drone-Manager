@@ -65,7 +65,7 @@ export default function ZoneList({ zones }: ZoneListProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleDelete(zone.Id.toString())}
+                onClick={() => handleDelete(zone.Id)}
               >
                 <Trash2 className="h-4 w-4 text-destructive" />
                 <span className="sr-only">Verwijder zone</span>

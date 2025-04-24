@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlusCircle } from "lucide-react";
 import useDockings from "@/hooks/useDockings";
+import { Docking } from "@/app/types";
 
 // Matches the data structure expected by the API
 type DockingFormData = {
@@ -50,7 +51,7 @@ export function AddDockingDialog() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     useDockings.handleAddDocking(
-      formData as DockingFormData, // Cast to full type, ensure validation covers missing fields
+      formData as Docking, // Cast to full type, ensure validation covers missing fields
       setIsLoading,
       setError,
       setIsOpen,
