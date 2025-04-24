@@ -165,10 +165,10 @@ const handleAddVluchtCyclus = async (
         Accept: "application/json",
       },
       body: JSON.stringify({
-        VerslagId: formData.VerslagId,
-        PlaatsId: formData.PlaatsId,
-        DroneId: formData.DroneId,
-        ZoneId: formData.ZoneId,
+        VerslagId: formData.VerslagId || null,
+        PlaatsId: formData.PlaatsId || null,
+        DroneId: formData.DroneId || null,
+        ZoneId: formData.ZoneId || null,
       }),
     });
 

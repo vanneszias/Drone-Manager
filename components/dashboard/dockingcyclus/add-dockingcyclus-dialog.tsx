@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,53 +19,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DockingCyclus, Drone, Docking, Cyclus } from "@/app/types";
 import { PlusCircle } from "lucide-react";
+import { DockingCyclus, Drone, Docking, Cyclus } from "@/app/types";
 import useDockingCyclus from "@/hooks/useDockingCyclus";
 import useDrones from "@/hooks/useDrones";
 import useDockings from "@/hooks/useDockings";
 import useCyclus from "@/hooks/useCyclus";
 
-type DockingCyclusFormData = {
-  DroneId: number;
-  DockingId: number;
-  CyclusId: number;
-};
-
 export function AddDockingCyclusDialog() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState<DockingCyclusFormData>({
-    DroneId: 0,
-    DockingId: 0,
-    CyclusId: 0,
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [drones, setDrones] = useState<Drone[]>([]);
-  const [dockings, setDockings] = useState<Docking[]>([]);
-  const [cycli, setCycli] = useState<Cyclus[]>([]);
-  const [dronesLoading, setDronesLoading] = useState(false);
-  const [dockingsLoading, setDockingsLoading] = useState(false);
-  const [cycliLoading, setCycliLoading] = useState(false);
   const { handleAddDockingCyclus } = useDockingCyclus;
   const { getDrones } = useDrones;
   const { getDockings } = useDockings;
   const { getCycli } = useCyclus;
 
+  const [isOpen, setIsOpen] = useState(false);
+  const [formData, setFormData] = useState<DockingCyclus>({
+    DroneId: 0,
+    DockingId: 0,
+    CyclusId: 0,
+  } as DockingCyclus);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [drones, setDrones] = useState<Drone[]>([]);
+  const [dockings, setDockings] = useState<Docking[]>([]);
+  const [cycli, setCycli] = useState<Cyclus[]>([]);
+
   useEffect(() => {
     if (isOpen) {
       const loadData = async () => {
         try {
-          setDronesLoading(true);
-          setDockingsLoading(true);
-          setCycliLoading(true);
-
           const [dronesData, dockingsData, cycliData] = await Promise.all([
             getDrones(),
             getDockings(),
             getCycli(),
           ]);
-
           setDrones(dronesData);
           setDockings(dockingsData);
           setCycli(cycliData);
@@ -74,21 +62,28 @@ export function AddDockingCyclusDialog() {
           setError(
             error instanceof Error ? error.message : "Failed to load data"
           );
-
-        } finally {
-          setDronesLoading(false);
-          setDockingsLoading(false);
-          setCycliLoading(false);
         }
       };
       loadData();
     }
   }, [isOpen]);
 
+  const handleSelectChange = (value: string, field: keyof DockingCyclus) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: parseInt(value),
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.DroneId || !formData.DockingId || !formData.CyclusId) {
+      setError("All fields are required");
+      return;
+    }
+
     handleAddDockingCyclus(
-      formData as DockingCyclus,
+      formData,
       setIsLoading,
       setError,
       setIsOpen,
@@ -100,14 +95,15 @@ export function AddDockingCyclusDialog() {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Nieuwe Docking Cyclus
+          <PlusCircle className="mr-2 h-4 w-4" />
+          New Docking Cyclus
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Nieuwe Docking Cyclus</DialogTitle>
+          <DialogTitle>Add Docking Cyclus</DialogTitle>
           <DialogDescription>
-            Voer de details in voor de nieuwe docking cyclus.
+            Create a new docking cyclus. All fields are required.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -120,36 +116,23 @@ export function AddDockingCyclusDialog() {
                 <Select
                   value={formData.DroneId ? formData.DroneId.toString() : ""}
                   onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      DroneId: parseInt(value),
-                    }))
+                    handleSelectChange(value, "DroneId")
                   }
-                  disabled={dronesLoading}
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecteer een drone" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Drone" />
                   </SelectTrigger>
                   <SelectContent>
-                    {dronesLoading ? (
-                      <SelectItem value="" disabled>
-                        Drones laden...
+                    {drones.map((drone) => (
+                      <SelectItem key={drone.Id} value={drone.Id.toString()}>
+                        {`Drone ${drone.Id} (${drone.status})`}
                       </SelectItem>
-                    ) : drones.length > 0 ? (
-                      drones.map((drone) => (
-                        <SelectItem key={drone.Id} value={drone.Id.toString()}>
-                          {`Drone ${drone.Id} (${drone.status}, ${drone.batterij}%)`}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="" disabled>
-                        Geen drones beschikbaar
-                      </SelectItem>
-                    )}
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="DockingId" className="text-right">
                 Docking
@@ -160,43 +143,28 @@ export function AddDockingCyclusDialog() {
                     formData.DockingId ? formData.DockingId.toString() : ""
                   }
                   onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      DockingId: parseInt(value),
-                    }))
+                    handleSelectChange(value, "DockingId")
                   }
-                  disabled={dockingsLoading}
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecteer een docking" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Docking" />
                   </SelectTrigger>
                   <SelectContent>
-                    {dockingsLoading ? (
-                      <SelectItem value="" disabled>
-                        Dockings laden...
+                    {dockings.map((docking) => (
+                      <SelectItem
+                        key={docking.Id}
+                        value={docking.Id.toString()}
+                      >
+                        {`${docking.locatie} (${
+                          docking.isbeschikbaar ? "Available" : "Not Available"
+                        })`}
                       </SelectItem>
-                    ) : dockings.length > 0 ? (
-                      dockings.map((docking) => (
-                        <SelectItem
-                          key={docking.Id}
-                          value={docking.Id.toString()}
-                        >
-                          {`${docking.locatie} (${
-                            docking.isbeschikbaar
-                              ? "Beschikbaar"
-                              : "Niet Beschikbaar"
-                          })`}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="" disabled>
-                        Geen dockings beschikbaar
-                      </SelectItem>
-                    )}
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="CyclusId" className="text-right">
                 Cyclus
@@ -205,35 +173,18 @@ export function AddDockingCyclusDialog() {
                 <Select
                   value={formData.CyclusId ? formData.CyclusId.toString() : ""}
                   onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      CyclusId: parseInt(value),
-                    }))
+                    handleSelectChange(value, "CyclusId")
                   }
-                  disabled={cycliLoading}
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecteer een cyclus" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Cyclus" />
                   </SelectTrigger>
                   <SelectContent>
-                    {cycliLoading ? (
-                      <SelectItem value="" disabled>
-                        Cycli laden...
+                    {cycli.map((cyclus) => (
+                      <SelectItem key={cyclus.Id} value={cyclus.Id.toString()}>
+                        {`Cyclus ${cyclus.Id} (${cyclus.startuur})`}
                       </SelectItem>
-                    ) : cycli.length > 0 ? (
-                      cycli.map((cyclus) => (
-                        <SelectItem
-                          key={cyclus.Id}
-                          value={cyclus.Id.toString()}
-                        >
-                          {`Cyclus ${cyclus.Id}`}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="" disabled>
-                        Geen cycli beschikbaar
-                      </SelectItem>
-                    )}
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -246,10 +197,10 @@ export function AddDockingCyclusDialog() {
               variant="outline"
               onClick={() => setIsOpen(false)}
             >
-              Annuleren
+              Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Toevoegen..." : "Docking Cyclus Toevoegen"}
+              {isLoading ? "Adding..." : "Add Docking Cyclus"}
             </Button>
           </DialogFooter>
         </form>
