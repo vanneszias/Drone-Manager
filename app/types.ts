@@ -1,4 +1,4 @@
-import { DateRange } from 'react-day-picker';
+import { DateRange } from "react-day-picker";
 
 export interface User {
   id: string;
@@ -14,7 +14,7 @@ export interface ApiResponse<T> {
 
 export interface Drone {
   id: number;
-  status: 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'OFFLINE';
+  status: "AVAILABLE" | "IN_USE" | "MAINTENANCE" | "OFFLINE";
   batterij: number; // Battery level
   magOpstijgen: boolean; // Allowed to take off
 }
@@ -24,7 +24,7 @@ export interface Evenement {
   Id: number;
   StartDatum: string; // Dates are strings in JSON
   EindDatum: string;
-  StartTijd: string;  // Times are strings in JSON
+  StartTijd: string; // Times are strings in JSON
   Tijdsduur: string;
   Naam: string;
 }
@@ -40,20 +40,21 @@ export interface Zone {
 export interface Startplaats {
   id: number;
   locatie: string;
-  isbeschikbaar: boolean; // DB uses snake_case
+  isbeschikbaar: boolean;
 }
 
 export interface DockingCyclus {
   id: number;
   locatie: string;
   capaciteit: number;
-  status: 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'OFFLINE';
+  status: "AVAILABLE" | "IN_USE" | "MAINTENANCE" | "OFFLINE";
 }
 
 // Define and export the Docking type
 export interface Docking {
   id: number;
   locatie: string;
+  isbeschikbaar: boolean;
 }
 
 export interface Event {
@@ -73,7 +74,6 @@ export interface Verslag {
   isgeaccepteerd: boolean;
   VluchtCyclusId?: number | null;
 }
-
 
 export interface VluchtCyclus {
   Id: number;
