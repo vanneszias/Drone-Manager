@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Cyclus } from "@/app/types";
+import React, { useState, useEffect } from "react";
+import { Cyclus, VluchtCyclus } from "@/app/types";
 import {
   Table,
   TableHeader,
@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import useCyclus from "@/hooks/useCyclus";
+import useVluchtCyclus from "@/hooks/useVluchtCyclus";
 import { EditCyclusDialog } from "./edit-cyclus-dialog";
 
 interface CyclusListProps {
@@ -23,12 +24,39 @@ interface CyclusListProps {
 
 export default function CyclusList({ cycli }: CyclusListProps) {
   const { handleDelete } = useCyclus;
+  const { getVluchtCycli } = useVluchtCyclus;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedCyclus, setSelectedCyclus] = useState<Cyclus | null>(null);
+  const [vluchtCycli, setVluchtCycli] = useState<VluchtCyclus[]>([]);
 
   const handleEdit = (cyclus: Cyclus) => {
     setSelectedCyclus(cyclus);
     setIsEditOpen(true);
+  };
+
+  useEffect(() => {
+    const loadVluchtCycli = async () => {
+      try {
+        const data = await getVluchtCycli();
+        setVluchtCycli(data);
+      } catch (error) {
+        console.error("Error loading vluchtcycli:", error);
+      }
+    };
+    loadVluchtCycli();
+  }, []);
+
+  const getVluchtCyclusDetails = (id: number | null | undefined) => {
+    if (!id) return "Geen vluchtcyclus";
+    const vluchtCyclus = vluchtCycli.find((vc) => vc.Id === id);
+    if (!vluchtCyclus) return `Vluchtcyclus ${id}`;
+
+    const details = [];
+    if (vluchtCyclus.DroneId) details.push(`Drone ${vluchtCyclus.DroneId}`);
+    if (vluchtCyclus.ZoneId) details.push(`Zone ${vluchtCyclus.ZoneId}`);
+    if (vluchtCyclus.PlaatsId) details.push(`Plaats ${vluchtCyclus.PlaatsId}`);
+
+    return details.length > 0 ? details.join(" | ") : `Vluchtcyclus ${id}`;
   };
 
   if (!cycli || cycli.length === 0) {
@@ -52,7 +80,7 @@ export default function CyclusList({ cycli }: CyclusListProps) {
             <TableHead className="w-[100px]">ID</TableHead>
             <TableHead>Start Uur</TableHead>
             <TableHead>Tijdstip</TableHead>
-            <TableHead>VluchtCyclus ID</TableHead>
+            <TableHead>Vluchtcyclus Details</TableHead>
             <TableHead className="text-right">Acties</TableHead>
           </TableRow>
         </TableHeader>
@@ -62,7 +90,9 @@ export default function CyclusList({ cycli }: CyclusListProps) {
               <TableCell className="font-medium">{cyclus.Id}</TableCell>
               <TableCell>{cyclus.startuur}</TableCell>
               <TableCell>{cyclus.tijdstip}</TableCell>
-              <TableCell>{cyclus.VluchtCyclusId ?? "N/A"}</TableCell>
+              <TableCell>
+                {getVluchtCyclusDetails(cyclus.VluchtCyclusId)}
+              </TableCell>
               <TableCell className="text-right">
                 <Button
                   variant="ghost"

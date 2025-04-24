@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { VluchtCyclus } from "@/app/types";
+import React, { useState, useEffect } from "react";
+import { VluchtCyclus, Drone, Zone, Startplaats, Verslag } from "@/app/types";
 import {
   Table,
   TableHeader,
@@ -24,14 +24,71 @@ interface VluchtCyclusListProps {
 export default function VluchtCyclusList({
   vluchtCycli,
 }: VluchtCyclusListProps) {
-  const { handleDelete } = useVluchtCyclus;
+  const { handleDelete, getDrones, getZones, getPlaces, getVerslagen } =
+    useVluchtCyclus;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedVluchtCyclus, setSelectedVluchtCyclus] =
     useState<VluchtCyclus | null>(null);
+  const [drones, setDrones] = useState<Drone[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [places, setPlaces] = useState<Startplaats[]>([]);
+  const [verslagen, setVerslagen] = useState<Verslag[]>([]);
+
+  useEffect(() => {
+    const loadRelatedData = async () => {
+      try {
+        const [dronesData, zonesData, placesData, verslagenData] =
+          await Promise.all([
+            getDrones(),
+            getZones(),
+            getPlaces(),
+            getVerslagen(),
+          ]);
+        setDrones(dronesData);
+        setZones(zonesData);
+        setPlaces(placesData);
+        setVerslagen(verslagenData);
+      } catch (error) {
+        console.error("Error loading related data:", error);
+      }
+    };
+
+    loadRelatedData();
+  }, []);
 
   const handleEdit = (vluchtCyclus: VluchtCyclus) => {
     setSelectedVluchtCyclus(vluchtCyclus);
     setIsEditOpen(true);
+  };
+
+  const getDroneDetails = (droneId: number | null | undefined) => {
+    if (!droneId) return "Geen drone";
+    const drone = drones.find((d) => d.Id === droneId);
+    if (!drone) return `Drone ${droneId}`;
+    return `Drone ${droneId} (${drone.status}, ${drone.batterij}%)`;
+  };
+
+  const getZoneDetails = (zoneId: number | null | undefined) => {
+    if (!zoneId) return "Geen zone";
+    const zone = zones.find((z) => z.Id === zoneId);
+    if (!zone) return `Zone ${zoneId}`;
+    return `${zone.naam} (${zone.breedte}x${zone.lengte}m)`;
+  };
+
+  const getStartplaatsDetails = (plaatsId: number | null | undefined) => {
+    if (!plaatsId) return "Geen startplaats";
+    const plaats = places.find((p) => p.Id === plaatsId);
+    if (!plaats) return `Startplaats ${plaatsId}`;
+    return `${plaats.locatie} ${
+      plaats.isbeschikbaar ? "(Beschikbaar)" : "(Bezet)"
+    }`;
+  };
+
+  const getVerslagDetails = (verslagId: number | null | undefined) => {
+    if (!verslagId) return "Geen verslag";
+    const verslag = verslagen.find((v) => v.Id === verslagId);
+    if (!verslag) return `Verslag ${verslagId}`;
+    return verslag.onderwerp;
   };
 
   if (!vluchtCycli || vluchtCycli.length === 0) {
@@ -53,10 +110,10 @@ export default function VluchtCyclusList({
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>
-            <TableHead>Verslag ID</TableHead>
-            <TableHead>Plaats ID</TableHead>
-            <TableHead>Drone ID</TableHead>
-            <TableHead>Zone ID</TableHead>
+            <TableHead>Drone</TableHead>
+            <TableHead>Zone</TableHead>
+            <TableHead>Startplaats</TableHead>
+            <TableHead>Verslag</TableHead>
             <TableHead className="text-right">Acties</TableHead>
           </TableRow>
         </TableHeader>
@@ -64,10 +121,12 @@ export default function VluchtCyclusList({
           {vluchtCycli.map((vluchtCyclus) => (
             <TableRow key={vluchtCyclus.Id}>
               <TableCell className="font-medium">{vluchtCyclus.Id}</TableCell>
-              <TableCell>{vluchtCyclus.VerslagId ?? "N/A"}</TableCell>
-              <TableCell>{vluchtCyclus.PlaatsId ?? "N/A"}</TableCell>
-              <TableCell>{vluchtCyclus.DroneId ?? "N/A"}</TableCell>
-              <TableCell>{vluchtCyclus.ZoneId ?? "N/A"}</TableCell>
+              <TableCell>{getDroneDetails(vluchtCyclus.DroneId)}</TableCell>
+              <TableCell>{getZoneDetails(vluchtCyclus.ZoneId)}</TableCell>
+              <TableCell>
+                {getStartplaatsDetails(vluchtCyclus.PlaatsId)}
+              </TableCell>
+              <TableCell>{getVerslagDetails(vluchtCyclus.VerslagId)}</TableCell>
               <TableCell className="text-right">
                 <Button
                   variant="ghost"

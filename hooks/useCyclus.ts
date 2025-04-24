@@ -76,14 +76,16 @@ const handleAddCyclus = async (
       body: JSON.stringify({
         startuur: formData.startuur,
         tijdstip: formData.tijdstip,
-        vluchtcyclus_id: formData.vluchtcyclus_id,
+        VluchtCyclusId: formData.VluchtCyclusId,
       }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || `Failed to add cyclus (${response.status})`);
+      throw new Error(
+        data.error || `Failed to add cyclus (${response.status})`
+      );
     }
 
     setIsOpen(false);
@@ -119,14 +121,16 @@ const handleUpdateCyclus = async (
       body: JSON.stringify({
         startuur: formData.startuur,
         tijdstip: formData.tijdstip,
-        vluchtcyclus_id: formData.vluchtcyclus_id,
+        VluchtCyclusId: formData.VluchtCyclusId,
       }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || `Failed to update cyclus (${response.status})`);
+      throw new Error(
+        data.error || `Failed to update cyclus (${response.status})`
+      );
     }
 
     setIsOpen(false);
@@ -136,7 +140,9 @@ const handleUpdateCyclus = async (
     window.location.reload();
   } catch (error) {
     console.error("Error updating cyclus:", error);
-    setError(error instanceof Error ? error.message : "Failed to update cyclus");
+    setError(
+      error instanceof Error ? error.message : "Failed to update cyclus"
+    );
   } finally {
     setIsLoading(false);
   }
