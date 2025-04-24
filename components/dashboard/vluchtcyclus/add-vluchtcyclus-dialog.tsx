@@ -124,6 +124,28 @@ export function AddVluchtCyclusDialog() {
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="verslag_select" className="text-right">
+                Verslag
+              </Label>
+              <Select
+                value={formData.VerslagId?.toString() || ""}
+                onValueChange={(value) =>
+                  handleSelectChange(value, "VerslagId")
+                }
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een verslag" />
+                </SelectTrigger>
+                <SelectContent>
+                  {places.map((place) => (
+                    <SelectItem key={place.Id} value={place.Id.toString()}>
+                      {place.locatie}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="plaats_select" className="text-right">
                 Plaats
               </Label>

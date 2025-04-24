@@ -12,8 +12,16 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Cyclus } from "@/app/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Cyclus, VluchtCyclus } from "@/app/types";
 import useCyclus from "@/hooks/useCyclus";
+import useVluchtCyclus from "@/hooks/useVluchtCyclus";
 
 interface EditCyclusDialogProps {
   cyclus: Cyclus;
@@ -26,7 +34,10 @@ export function EditCyclusDialog({
   isOpen,
   setIsOpen,
 }: EditCyclusDialogProps) {
+  const { handleUpdateCyclus } = useCyclus;
+  const { getVluchtCycli } = useVluchtCyclus;
   const [formData, setFormData] = useState<Cyclus>(cyclus);
+  const [vluchtCycli, setVluchtCycli] = useState<VluchtCyclus[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,11 +45,34 @@ export function EditCyclusDialog({
     setFormData(cyclus);
   }, [cyclus]);
 
+  useEffect(() => {
+    const fetchVluchtCycli = async () => {
+      if (isOpen) {
+        try {
+          const data = await getVluchtCycli();
+          setVluchtCycli(data);
+        } catch (error) {
+          console.error("Error fetching vluchtcycli:", error);
+          setError("Failed to load vluchtcycli options");
+        }
+      }
+    };
+
+    fetchVluchtCycli();
+  }, [isOpen]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [id]: id === "VluchtCyclusId" ? (value ? Number(value) : null) : value,
+      [id]: value,
+    }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      VluchtCyclusId: value ? parseInt(value) : null,
     }));
   };
 
@@ -46,7 +80,6 @@ export function EditCyclusDialog({
     e.preventDefault();
     setError(null);
 
-    // Basic validation
     if (!formData.startuur) {
       setError("Start hour is required");
       return;
@@ -56,7 +89,7 @@ export function EditCyclusDialog({
       return;
     }
 
-    useCyclus.handleUpdateCyclus(
+    handleUpdateCyclus(
       formData,
       setIsLoading,
       setError,
@@ -69,9 +102,9 @@ export function EditCyclusDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Cyclus</DialogTitle>
+          <DialogTitle>Bewerk Cyclus</DialogTitle>
           <DialogDescription>
-            Make changes to the cycle. Click save when you're done.
+            Pas de details van de cyclus aan.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -103,18 +136,24 @@ export function EditCyclusDialog({
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="VluchtCyclusId" className="text-right">
-                Flight Cycle ID
+              <Label htmlFor="vluchtcyclus_select" className="text-right">
+                Vluchtcyclus
               </Label>
-              <Input
-                id="VluchtCyclusId"
-                type="number"
-                min="1"
-                value={formData.VluchtCyclusId || ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="Optional"
-              />
+              <Select
+                value={formData.VluchtCyclusId?.toString() || ""}
+                onValueChange={handleSelectChange}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een vluchtcyclus" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vluchtCycli.map((vc) => (
+                    <SelectItem key={vc.Id} value={vc.Id.toString()}>
+                      {`Vluchtcyclus ${vc.Id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
@@ -124,10 +163,10 @@ export function EditCyclusDialog({
               variant="outline"
               onClick={() => setIsOpen(false)}
             >
-              Cancel
+              Annuleren
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save Changes"}
+              {isLoading ? "Opslaan..." : "Wijzigingen Opslaan"}
             </Button>
           </DialogFooter>
         </form>
