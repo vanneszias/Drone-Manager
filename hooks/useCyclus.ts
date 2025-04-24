@@ -76,23 +76,18 @@ const handleAddCyclus = async (
       body: JSON.stringify({
         startuur: formData.startuur,
         tijdstip: formData.tijdstip,
-        VluchtCyclusId: formData.VluchtCyclusId,
+        vluchtcyclus_id: formData.VluchtCyclusId,
       }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error || `Failed to add cyclus (${response.status})`
-      );
+      throw new Error(data.error || `Failed to add cyclus (${response.status})`);
     }
 
     setIsOpen(false);
-    setFormData({
-      startuur: "",
-      tijdstip: "",
-      VluchtCyclusId: null,
-    } as Cyclus);
+    setFormData({} as Cyclus);
 
     alert("Cyclus succesvol toegevoegd!");
     window.location.reload();
@@ -124,32 +119,24 @@ const handleUpdateCyclus = async (
       body: JSON.stringify({
         startuur: formData.startuur,
         tijdstip: formData.tijdstip,
-        vluchtcyclusId: formData.VluchtCyclusId,
+        vluchtcyclus_id: formData.VluchtCyclusId,
       }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error || `Failed to update cyclus (${response.status})`
-      );
+      throw new Error(data.error || `Failed to update cyclus (${response.status})`);
     }
 
     setIsOpen(false);
-    setFormData({
-      Id: 0,
-      startuur: "",
-      tijdstip: "",
-      vluchtcyclusId: null,
-    } as Cyclus);
+    setFormData({} as Cyclus);
 
-    alert("Cyclus successfully updated!");
+    alert("Cyclus succesvol bijgewerkt!");
     window.location.reload();
   } catch (error) {
     console.error("Error updating cyclus:", error);
-    setError(
-      error instanceof Error ? error.message : "Failed to update cyclus"
-    );
+    setError(error instanceof Error ? error.message : "Failed to update cyclus");
   } finally {
     setIsLoading(false);
   }

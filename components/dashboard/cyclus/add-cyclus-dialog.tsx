@@ -117,11 +117,11 @@ export function AddCyclusDialog() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tijdsduur" className="text-right">
-                Tijdsduur
+              <Label htmlFor="tijdstip" className="text-right">
+                Tijdstip
               </Label>
               <Input
-                id="tijdsduur"
+                id="tijdstip"
                 type="time"
                 value={formData.tijdstip}
                 onChange={handleInputChange}
