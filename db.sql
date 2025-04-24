@@ -90,4 +90,4 @@ CREATE INDEX "idx_vluchtcyclus_zone" ON "VluchtCyclus"("ZoneId");
 CREATE INDEX "idx_dockingcyclus_drone" ON "DockingCyclus"("DroneId");
 CREATE INDEX "idx_dockingcyclus_docking" ON "DockingCyclus"("DockingId");
 CREATE INDEX "idx_dockingcyclus_cyclus" ON "DockingCyclus"("CyclusId");
-CREATE INDEX "idx_cyclus_vluchtcyclus" ON "Cyclus"("VluchtCyclusId");
+CREATE INDEX "idx_cyclus_vluchtcyclus" ON "Cyclus"("VluchtCyclusId"); 
