@@ -57,7 +57,13 @@ export default function DashboardLayout({
               href="/dashboard/dockings"
               className="block py-2 px-4 hover:bg-muted rounded"
             >
-              Dockings
+              Docking platformen
+            </a>
+            <a 
+              href="/dashboard/dockingcyclus"
+              className="block py-2 px-4 hover:bg-muted rounded"
+            >
+              Docking Cycli
             </a>
             <a
               href="/dashboard/verslag"

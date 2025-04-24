@@ -43,11 +43,26 @@ export interface Startplaats {
   isbeschikbaar: boolean; // DB uses snake_case
 }
 
+export interface DockingCyclus {
+  id: number;
+  locatie: string;
+  capaciteit: number;
+  status: 'AVAILABLE' | 'IN_USE' | 'MAINTENANCE' | 'OFFLINE';
+}
+
 // Define and export the Docking type
 export interface Docking {
   id: number;
   locatie: string;
-  isbeschikbaar: boolean; // DB uses snake_case
+}
+
+export interface Event {
+  Id: number;
+  Naam: string;
+  StartDatum: string;
+  EindDatum: string;
+  StartTijd: string;
+  Tijdsduur: string;
 }
 
 export interface Verslag {
@@ -58,6 +73,7 @@ export interface Verslag {
   isgeaccepteerd: boolean;
   VluchtCyclusId?: number | null;
 }
+
 
 export interface VluchtCyclus {
   Id: number;
