@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,14 +13,22 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Cyclus } from "@/app/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Cyclus, VluchtCyclus } from "@/app/types";
 import { PlusCircle } from "lucide-react";
 import useCyclus from "@/hooks/useCyclus";
+import useVluchtCyclus from "@/hooks/useVluchtCyclus";
 
 type CyclusFormData = {
   startuur: string;
   tijdstip: string;
-  vluchtcyclusId?: number | null;
+  VluchtCyclusId?: number | null;
 };
 
 export function AddCyclusDialog() {
@@ -28,18 +36,42 @@ export function AddCyclusDialog() {
   const [formData, setFormData] = useState<CyclusFormData>({
     startuur: "",
     tijdstip: "",
-    vluchtcyclusId: null,
-  } as CyclusFormData & Cyclus); // Ensure formData is of type CyclusFormData
-
+    VluchtCyclusId: null,
+  });
+  const [vluchtCycli, setVluchtCycli] = useState<VluchtCyclus[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { handleAddCyclus } = useCyclus;
+  const { getVluchtCycli } = useVluchtCyclus;
+
+  useEffect(() => {
+    const fetchVluchtCycli = async () => {
+      if (isOpen) {
+        try {
+          const data = await getVluchtCycli();
+          setVluchtCycli(data);
+        } catch (error) {
+          console.error("Error fetching vluchtcycli:", error);
+          setError("Failed to load vluchtcycli options");
+        }
+      }
+    };
+
+    fetchVluchtCycli();
+  }, [isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value, type } = e.target;
+    const { id, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [id]: type === "number" ? Number(value) : value,
+      [id]: value,
+    }));
+  };
+
+  const handleSelectChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      VluchtCyclusId: value ? parseInt(value) : null,
     }));
   };
 
@@ -98,18 +130,24 @@ export function AddCyclusDialog() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="vluchtcyclusId" className="text-right">
-                Vluchtcyclus ID
+              <Label htmlFor="vluchtcyclus_select" className="text-right">
+                Vluchtcyclus
               </Label>
-              <Input
-                id="vluchtcyclusId"
-                type="number"
-                min="0"
-                value={formData.vluchtcyclusId || ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-                required
-              />
+              <Select
+                value={formData.VluchtCyclusId?.toString() || ""}
+                onValueChange={handleSelectChange}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een vluchtcyclus" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vluchtCycli.map((vc) => (
+                    <SelectItem key={vc.Id} value={vc.Id.toString()}>
+                      {`Vluchtcyclus ${vc.Id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
