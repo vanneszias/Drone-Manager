@@ -28,7 +28,7 @@ import useVluchtCyclus from "@/hooks/useVluchtCyclus";
 type CyclusFormData = {
   startuur: string;
   tijdstip: string;
-  VluchtCyclusId?: number | null;
+  vluchtcyclus_id?: number | null;
 };
 
 export function AddCyclusDialog() {
@@ -36,7 +36,7 @@ export function AddCyclusDialog() {
   const [formData, setFormData] = useState<CyclusFormData>({
     startuur: "",
     tijdstip: "",
-    VluchtCyclusId: null,
+    vluchtcyclus_id: null,
   });
   const [vluchtCycli, setVluchtCycli] = useState<VluchtCyclus[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -71,7 +71,7 @@ export function AddCyclusDialog() {
   const handleSelectChange = (value: string) => {
     setFormData((prev) => ({
       ...prev,
-      VluchtCyclusId: value ? parseInt(value) : null,
+      vluchtcyclus_id: value ? parseInt(value) : null,
     }));
   };
 
@@ -134,7 +134,7 @@ export function AddCyclusDialog() {
                 Vluchtcyclus
               </Label>
               <Select
-                value={formData.VluchtCyclusId?.toString() || ""}
+                value={formData.vluchtcyclus_id?.toString() || ""}
                 onValueChange={handleSelectChange}
               >
                 <SelectTrigger className="col-span-3">
