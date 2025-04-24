@@ -128,7 +128,7 @@ const handleUpdateZone = async (
         naam: formData.naam,
         breedte: formData.breedte,
         lengte: formData.lengte,
-        EvenementId: formData.EvenementId,
+        evenement_id: formData.EvenementId, // Added this line to include the event ID
       }),
     });
 
