@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { DockingCyclus } from "@/app/types";
+import React, { useState, useEffect } from "react";
+import { DockingCyclus, Drone, Docking, Cyclus } from "@/app/types";
 import {
   Table,
   TableHeader,
@@ -10,9 +10,9 @@ import {
   TableHead,
   TableRow,
   TableCell,
-  TableCaption,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2 } from "lucide-react";
 import useDockingCyclus from "@/hooks/useDockingCyclus";
 import { EditDockingCyclusDialog } from "./edit-dockingcyclus-dialog";
@@ -24,10 +24,91 @@ interface DockingCyclusListProps {
 export default function DockingCyclusList({
   dockingCycli,
 }: DockingCyclusListProps) {
-  const { handleDelete } = useDockingCyclus;
+  const { handleDelete, getDrones, getDockings, getCycli } = useDockingCyclus;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedDockingCyclus, setSelectedDockingCyclus] =
     useState<DockingCyclus | null>(null);
+  const [drones, setDrones] = useState<Drone[]>([]);
+  const [dockings, setDockings] = useState<Docking[]>([]);
+  const [cycli, setCycli] = useState<Cyclus[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [droneData, dockingData, cyclusData] = await Promise.all([
+          getDrones(),
+          getDockings(),
+          getCycli(),
+        ]);
+        setDrones(droneData);
+        setDockings(dockingData);
+        setCycli(cyclusData);
+      } catch (error) {
+        console.error("Error loading related data:", error);
+      }
+    };
+    loadData();
+  }, []);
+
+  const getDroneDetails = (droneId: number) => {
+    const drone = drones.find((d) => d.Id === droneId);
+    if (!drone) return `Drone #${droneId}`;
+    return (
+      <div className="space-y-1">
+        <div className="font-medium">Drone #{droneId}</div>
+        <Badge
+          variant="secondary"
+          className={
+            drone.status === "AVAILABLE"
+              ? "bg-green-100 text-green-800"
+              : drone.status === "IN_USE"
+              ? "bg-blue-100 text-blue-800"
+              : drone.status === "MAINTENANCE"
+              ? "bg-yellow-100 text-yellow-800"
+              : "bg-gray-100 text-gray-800"
+          }
+        >
+          {drone.status}
+        </Badge>
+        <div className="text-sm text-muted-foreground">
+          Batterij: {drone.batterij}%
+        </div>
+      </div>
+    );
+  };
+
+  const getDockingDetails = (dockingId: number) => {
+    const docking = dockings.find((d) => d.Id === dockingId);
+    if (!docking) return `Docking #${dockingId}`;
+    return (
+      <div className="space-y-1">
+        <div className="font-medium">Docking #{dockingId}</div>
+        <div className="text-sm">{docking.locatie}</div>
+        <Badge
+          variant={docking.isbeschikbaar ? "default" : "secondary"}
+          className={
+            docking.isbeschikbaar
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }
+        >
+          {docking.isbeschikbaar ? "Beschikbaar" : "Bezet"}
+        </Badge>
+      </div>
+    );
+  };
+
+  const getCyclusDetails = (cyclusId: number) => {
+    const cyclus = cycli.find((c) => c.Id === cyclusId);
+    if (!cyclus) return `Cyclus #${cyclusId}`;
+    return (
+      <div className="space-y-1">
+        <div className="font-medium">Cyclus #{cyclusId}</div>
+        <div className="text-sm">Start: {cyclus.startuur}</div>
+        <div className="text-sm">Tijdstip: {cyclus.tijdstip}</div>
+      </div>
+    );
+  };
 
   const handleEdit = (dockingCyclus: DockingCyclus) => {
     setSelectedDockingCyclus(dockingCyclus);
@@ -53,9 +134,9 @@ export default function DockingCyclusList({
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>
-            <TableHead>Drone ID</TableHead>
-            <TableHead>Docking ID</TableHead>
-            <TableHead>Cyclus ID</TableHead>
+            <TableHead>Drone Details</TableHead>
+            <TableHead>Docking Details</TableHead>
+            <TableHead>Cyclus Details</TableHead>
             <TableHead className="text-right">Acties</TableHead>
           </TableRow>
         </TableHeader>
@@ -63,9 +144,11 @@ export default function DockingCyclusList({
           {dockingCycli.map((dockingCyclus) => (
             <TableRow key={dockingCyclus.Id}>
               <TableCell className="font-medium">{dockingCyclus.Id}</TableCell>
-              <TableCell>{dockingCyclus.DroneId ?? "N/A"}</TableCell>
-              <TableCell>{dockingCyclus.DockingId ?? "N/A"}</TableCell>
-              <TableCell>{dockingCyclus.CyclusId ?? "N/A"}</TableCell>
+              <TableCell>{getDroneDetails(dockingCyclus.DroneId)}</TableCell>
+              <TableCell>
+                {getDockingDetails(dockingCyclus.DockingId)}
+              </TableCell>
+              <TableCell>{getCyclusDetails(dockingCyclus.CyclusId)}</TableCell>
               <TableCell className="text-right">
                 <Button
                   variant="ghost"

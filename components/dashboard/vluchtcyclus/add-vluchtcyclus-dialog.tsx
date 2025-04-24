@@ -75,7 +75,7 @@ export function AddVluchtCyclusDialog() {
   const handleSelectChange = (value: string, field: keyof VluchtCyclus) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: value,
+      [field]: value === "" ? null : parseInt(value),
     }));
   };
 
@@ -94,25 +94,41 @@ export function AddVluchtCyclusDialog() {
     e.preventDefault();
     setError(null);
 
-    const apiData = {
-      VerslagId: formData.VerslagId ? formData.VerslagId : null,
-      PlaatsId: formData.PlaatsId ? formData.PlaatsId : null,
-      DroneId: formData.DroneId ? formData.DroneId : null,
-      ZoneId: formData.ZoneId ? formData.ZoneId : null,
-    };
+    try {
+      // Validate and ensure all values are proper numbers or null
+      const apiData = {
+        VerslagId: formData.VerslagId || null,
+        PlaatsId: formData.PlaatsId || null,
+        DroneId: formData.DroneId || null,
+        ZoneId: formData.ZoneId || null,
+      };
 
-    if (!apiData.PlaatsId && !apiData.DroneId && !apiData.ZoneId) {
-      setError("Please select at least one option (Place, Drone, or Zone)");
-      return;
+      // Check if at least one required field is filled
+      if (!apiData.PlaatsId && !apiData.DroneId && !apiData.ZoneId) {
+        setError("Please select at least one option (Place, Drone, or Zone)");
+        return;
+      }
+
+      // Check if the selected drone is available
+      if (apiData.DroneId) {
+        const selectedDrone = drones.find((d) => d.Id === apiData.DroneId);
+        if (selectedDrone?.status !== "AVAILABLE") {
+          setError("Selected drone is not available");
+          return;
+        }
+      }
+
+      handleAddVluchtCyclus(
+        apiData as VluchtCyclus,
+        setIsLoading,
+        setError,
+        setIsOpen,
+        resetForm
+      );
+    } catch (error) {
+      console.error("Error preparing form data:", error);
+      setError("Invalid form data. Please check your selections.");
     }
-
-    handleAddVluchtCyclus(
-      apiData as VluchtCyclus,
-      setIsLoading,
-      setError,
-      setIsOpen,
-      resetForm
-    );
   };
 
   return (

@@ -77,7 +77,7 @@ export function AddVerslagDialog() {
   const handleVluchtCyclusChange = (value: string) => {
     setFormData((prev) => ({
       ...prev,
-      VluchtCyclusId: value ? parseInt(value) : null,
+      VluchtCyclusId: value === "none" ? null : parseInt(value),
     }));
   };
 
@@ -94,8 +94,24 @@ export function AddVerslagDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.onderwerp?.trim()) {
+      setError("Subject is required");
+      return;
+    }
+    if (!formData.inhoud?.trim()) {
+      setError("Content is required");
+      return;
+    }
+
+    const cleanedFormData = {
+      ...formData,
+      onderwerp: formData.onderwerp.trim(),
+      inhoud: formData.inhoud.trim(),
+      VluchtCyclusId: formData.VluchtCyclusId || null,
+    };
+
     await handleAddVerslag(
-      formData as Verslag,
+      cleanedFormData as Verslag,
       setIsLoading,
       setError,
       setIsOpen,
@@ -174,17 +190,19 @@ export function AddVerslagDialog() {
                 Flight Cycle
               </Label>
               <Select
-                value={formData.VluchtCyclusId?.toString() || ""}
+                value={formData.VluchtCyclusId?.toString() || "none"}
                 onValueChange={handleVluchtCyclusChange}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select Flight Cycle" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">No Flight Cycle</SelectItem>
                   {vluchtCycli.map((vc) => (
                     <SelectItem key={vc.Id} value={vc.Id.toString()}>
                       Flight Cycle {vc.Id}
+                      {vc.DroneId ? ` (Drone ${vc.DroneId})` : ""}
+                      {vc.ZoneId ? ` - Zone ${vc.ZoneId}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>

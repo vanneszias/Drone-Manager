@@ -46,6 +46,24 @@ export function EditEventDialog({
     e.preventDefault();
     setError(null);
 
+    // Validate all required fields are present and not empty
+    const requiredFields = {
+      Naam: formData.Naam?.trim(),
+      StartDatum: formData.StartDatum?.trim(),
+      EindDatum: formData.EindDatum?.trim(),
+      StartTijd: formData.StartTijd?.trim(),
+      Tijdsduur: formData.Tijdsduur?.trim(),
+    };
+
+    const emptyFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+
+    if (emptyFields.length > 0) {
+      setError(`Missing required fields: ${emptyFields.join(", ")}`);
+      return;
+    }
+
     // Validate dates
     const startDate = new Date(formData.StartDatum);
     const endDate = new Date(formData.EindDatum);
@@ -63,13 +81,17 @@ export function EditEventDialog({
       return;
     }
 
-    if (!formData.Naam.trim()) {
-      setError("Name is required");
-      return;
-    }
+    const trimmedFormData = {
+      ...formData,
+      Naam: formData.Naam.trim(),
+      StartDatum: formData.StartDatum.trim(),
+      EindDatum: formData.EindDatum.trim(),
+      StartTijd: formData.StartTijd.trim(),
+      Tijdsduur: formData.Tijdsduur.trim(),
+    };
 
     useEvents.handleUpdateEvent(
-      formData,
+      { ...trimmedFormData, Id: event.Id },
       setIsLoading,
       setError,
       setIsOpen,

@@ -79,7 +79,7 @@ export function EditVluchtCyclusDialog({
   const handleSelectChange = (value: string, field: keyof VluchtCyclus) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: value ? parseInt(value) : null,
+      [field]: value === "" ? null : parseInt(value),
     }));
   };
 
@@ -87,18 +87,54 @@ export function EditVluchtCyclusDialog({
     e.preventDefault();
     setError(null);
 
-    if (!formData.PlaatsId && !formData.DroneId && !formData.ZoneId) {
-      setError("Minstens één optie (Plaats, Drone, of Zone) is vereist");
-      return;
-    }
+    try {
+      // Ensure all values are either valid numbers or null
+      const cleanedFormData = {
+        ...formData,
+        Id: vluchtCyclus.Id, // Ensure we always have the correct ID
+        VerslagId: formData.VerslagId || null,
+        PlaatsId: formData.PlaatsId || null,
+        DroneId: formData.DroneId || null,
+        ZoneId: formData.ZoneId || null,
+      };
 
-    handleUpdateVluchtCyclus(
-      formData,
-      setIsLoading,
-      setError,
-      setIsOpen,
-      setFormData
-    );
+      if (
+        !cleanedFormData.PlaatsId &&
+        !cleanedFormData.DroneId &&
+        !cleanedFormData.ZoneId
+      ) {
+        setError("Minstens één optie (Plaats, Drone, of Zone) is vereist");
+        return;
+      }
+
+      // Check if the selected drone is available (unless it's the same drone)
+      if (
+        cleanedFormData.DroneId &&
+        cleanedFormData.DroneId !== vluchtCyclus.DroneId
+      ) {
+        const selectedDrone = drones.find(
+          (d) => d.Id === cleanedFormData.DroneId
+        );
+        if (selectedDrone?.status !== "AVAILABLE") {
+          setError("Geselecteerde drone is niet beschikbaar");
+          return;
+        }
+      }
+
+      // Log the data being sent for debugging
+      console.log("Sending update data:", cleanedFormData);
+
+      handleUpdateVluchtCyclus(
+        cleanedFormData,
+        setIsLoading,
+        setError,
+        setIsOpen,
+        setFormData
+      );
+    } catch (error) {
+      console.error("Error preparing form data:", error);
+      setError("Er is een fout opgetreden bij het verwerken van het formulier");
+    }
   };
 
   return (

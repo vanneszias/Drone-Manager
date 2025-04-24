@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Cyclus, VluchtCyclus } from "@/app/types";
+import {
+  Cyclus,
+  VluchtCyclus,
+  Drone,
+  Zone,
+  Startplaats,
+  Verslag,
+} from "@/app/types";
 import {
   Table,
   TableHeader,
@@ -23,10 +30,15 @@ interface CyclusListProps {
 
 export default function CyclusList({ cycli }: CyclusListProps) {
   const { handleDelete } = useCyclus;
-  const { getVluchtCycli } = useVluchtCyclus;
+  const { getVluchtCycli, getDrones, getZones, getPlaces, getVerslagen } =
+    useVluchtCyclus;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedCyclus, setSelectedCyclus] = useState<Cyclus | null>(null);
   const [vluchtCycli, setVluchtCycli] = useState<VluchtCyclus[]>([]);
+  const [drones, setDrones] = useState<Drone[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [plaatsen, setPlaatsen] = useState<Startplaats[]>([]);
+  const [verslagen, setVerslagen] = useState<Verslag[]>([]);
 
   const handleEdit = (cyclus: Cyclus) => {
     setSelectedCyclus(cyclus);
@@ -34,31 +46,66 @@ export default function CyclusList({ cycli }: CyclusListProps) {
   };
 
   useEffect(() => {
-    const loadVluchtCycli = async () => {
+    const loadData = async () => {
       try {
-        const data = await getVluchtCycli();
-        setVluchtCycli(data);
+        const [vluchtData, droneData, zoneData, plaatsData, verslagData] =
+          await Promise.all([
+            getVluchtCycli(),
+            getDrones(),
+            getZones(),
+            getPlaces(),
+            getVerslagen(),
+          ]);
+        setVluchtCycli(vluchtData);
+        setDrones(droneData);
+        setZones(zoneData);
+        setPlaatsen(plaatsData);
+        setVerslagen(verslagData);
       } catch (error) {
-        console.error("Error loading vluchtcycli:", error);
+        console.error("Error loading data:", error);
       }
     };
-    loadVluchtCycli();
+    loadData();
   }, [cycli]);
 
   const getVluchtCyclusDetails = (id: number | null | undefined) => {
-    console.log("vluchtCycli", vluchtCycli);
-    console.log("id", id);
-
     if (!id) return "Geen vluchtcyclus";
     const vluchtCyclus = vluchtCycli.find((vc) => vc.Id === Number(id));
-    if (!vluchtCyclus) return `Vluchtcyclus ${id}`;
+    if (!vluchtCyclus) return `Vluchtcyclus ${id} (laden...)`;
 
     const details = [];
-    if (vluchtCyclus.DroneId) details.push(`Drone ${vluchtCyclus.DroneId}`);
-    if (vluchtCyclus.ZoneId) details.push(`Zone ${vluchtCyclus.ZoneId}`);
-    if (vluchtCyclus.PlaatsId) details.push(`Plaats ${vluchtCyclus.PlaatsId}`);
 
-    return details.length > 0 ? details.join(" | ") : `Vluchtcyclus ${id}`;
+    if (vluchtCyclus.DroneId) {
+      const drone = drones.find((d) => d.Id === vluchtCyclus.DroneId);
+      details.push(
+        `Drone #${vluchtCyclus.DroneId}${drone ? ` (${drone.status})` : ""}`
+      );
+    }
+
+    if (vluchtCyclus.ZoneId) {
+      const zone = zones.find((z) => z.Id === vluchtCyclus.ZoneId);
+      details.push(
+        `Zone #${vluchtCyclus.ZoneId}${zone ? ` (${zone.naam})` : ""}`
+      );
+    }
+
+    if (vluchtCyclus.PlaatsId) {
+      const plaats = plaatsen.find((p) => p.Id === vluchtCyclus.PlaatsId);
+      details.push(
+        `Startplaats #${vluchtCyclus.PlaatsId}${
+          plaats ? ` (${plaats.locatie})` : ""
+        }`
+      );
+    }
+
+    if (vluchtCyclus.VerslagId) {
+      const verslag = verslagen.find((v) => v.Id === vluchtCyclus.VerslagId);
+      if (verslag) {
+        details.push(`Verslag: ${verslag.onderwerp}`);
+      }
+    }
+
+    return details.length > 0 ? details.join(" | ") : `Vluchtcyclus #${id}`;
   };
 
   if (!cycli || cycli.length === 0) {
