@@ -1,5 +1,3 @@
-import { DockingCyclus } from '@/app/types';
-
 import { DockingCyclus } from "@/app/types";
 
 const apiUrl = "https://drone.ziasvannes.tech/api/docking-cyclus";
@@ -19,12 +17,17 @@ async function getDockingCycli(): Promise<DockingCyclus[]> {
 
     if (!res.ok) {
       const errorText = await res.text();
-      console.error(`Error fetching ${apiUrl}: ${res.status} ${res.statusText}`);
+      console.error(
+        `Error fetching ${apiUrl}: ${res.status} ${res.statusText}`
+      );
       console.error(`Response body: ${errorText.substring(0, 500)}...`);
-      throw new Error(`Failed to fetch docking cycli. Status: ${res.status}. Check server logs.`);
+      throw new Error(
+        `Failed to fetch docking cycli. Status: ${res.status}. Check server logs.`
+      );
     }
 
     const data = await res.json();
+    return data as DockingCyclus[];
   } catch (error) {
     console.error(`Error in getDockingCycli:`, error);
     throw error;
@@ -32,7 +35,8 @@ async function getDockingCycli(): Promise<DockingCyclus[]> {
 }
 
 const handleDelete = async (id: number) => {
-  if (!confirm(`Weet je zeker dat je docking cyclus ${id} wilt verwijderen?`)) return;
+  if (!confirm(`Weet je zeker dat je docking cyclus ${id} wilt verwijderen?`))
+    return;
 
   try {
     const res = await fetch(`${apiUrl}/${id}`, {
@@ -49,7 +53,9 @@ const handleDelete = async (id: number) => {
     window.location.reload();
   } catch (error) {
     console.error("Error deleting docking cyclus:", error);
-    alert("Er is een fout opgetreden bij het verwijderen van de docking cyclus.");
+    alert(
+      "Er is een fout opgetreden bij het verwijderen van de docking cyclus."
+    );
   }
 };
 
@@ -73,7 +79,7 @@ const handleAddDockingCyclus = async (
       body: JSON.stringify({
         DroneId: formData.DroneId,
         DockingId: formData.DockingId,
-        CyclusId: formData.CyclusId
+        CyclusId: formData.CyclusId,
       }),
     });
 
@@ -88,14 +94,16 @@ const handleAddDockingCyclus = async (
     setFormData({
       DroneId: 0,
       DockingId: 0,
-      CyclusId: 0
+      CyclusId: 0,
     } as DockingCyclus);
 
     alert("Docking cyclus succesvol toegevoegd!");
     window.location.reload();
   } catch (error) {
     console.error("Error adding docking cyclus:", error);
-    setError(error instanceof Error ? error.message : "Failed to add docking cyclus");
+    setError(
+      error instanceof Error ? error.message : "Failed to add docking cyclus"
+    );
   } finally {
     setIsLoading(false);
   }
