@@ -44,8 +44,26 @@ export function AddDockingCyclusDialog() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate data
+    if (!formData.DroneId || !formData.DockingId || !formData.CyclusId) {
+      setError("Alle velden zijn verplicht");
+      return;
+    }
+  
+    // Convert the form data to match DockingCyclus interface
+    const apiPayload: DockingCyclus = {
+      Id: 0, // Server will assign this
+      DroneId: formData.DroneId,
+      DockingId: formData.DockingId,
+      CyclusId: formData.CyclusId
+    } as DockingCyclus;
+  
+    // Log the payload for debugging
+    console.log('Sending payload:', apiPayload);
+  
     handleAddDockingCyclus(
-      formData as DockingCyclus,
+      apiPayload,
       setIsLoading,
       setError,
       setIsOpen,
