@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react"; // Added useEffect
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,19 +14,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-// Import Select if using dropdown for VluchtCyclusId
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle } from "lucide-react";
 import useVerslag from "@/hooks/useVerslag";
-import { Verslag } from "@/app/types";
-// Import hook to fetch VluchtCycli if using dropdown
-// import useVluchtCycli from "@/hooks/useVluchtCycli"; // Assuming this hook exists
+import useVluchtCyclus from "@/hooks/useVluchtCyclus";
+import { Verslag, VluchtCyclus } from "@/app/types";
 
-// Define the input type matching the hook's expectation
 interface VerslagInput {
   onderwerp: string;
   inhoud: string;
-  vlucht_cyclus_id?: number | null | string; // Allow string for input field value
+  vlucht_cyclus_id?: number | null;
 }
 
 export function AddVerslagDialog() {
@@ -34,10 +31,28 @@ export function AddVerslagDialog() {
   const [formData, setFormData] = useState<VerslagInput>({
     onderwerp: "",
     inhoud: "",
-    vlucht_cyclus_id: null, // Initialize as null for input
+    vlucht_cyclus_id: null,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [vluchtCycli, setVluchtCycli] = useState<VluchtCyclus[]>([]);
+  const { getVluchtCycli } = useVluchtCyclus;
+
+  useEffect(() => {
+    const fetchVluchtCycli = async () => {
+      if (isOpen) {
+        try {
+          const data = await getVluchtCycli();
+          setVluchtCycli(data);
+        } catch (error) {
+          console.error("Error fetching vluchtcycli:", error);
+          setError("Failed to load vlucht cycli");
+        }
+      }
+    };
+
+    fetchVluchtCycli();
+  }, [isOpen]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -46,15 +61,20 @@ export function AddVerslagDialog() {
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
 
+  const handleVluchtCyclusChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      vlucht_cyclus_id: value ? parseInt(value) : null,
+    }));
+  };
+
   const resetForm = () => {
-    setFormData({ onderwerp: "", inhoud: "", vlucht_cyclus_id: "" });
+    setFormData({ onderwerp: "", inhoud: "", vlucht_cyclus_id: null });
     setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Pass the current formData (including vlucht_cyclus_id as string/null)
-    // The hook will handle converting it to number if valid
     await useVerslag.handleAddVerslag(
       formData as Verslag,
       setIsLoading,
@@ -89,7 +109,6 @@ export function AddVerslagDialog() {
         <form onSubmit={handleSubmit}>
           {error && <p className="text-red-500 text-sm mb-4 px-1">{error}</p>}
           <div className="grid gap-4 py-4">
-            {/* Onderwerp */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="onderwerp" className="text-right">
                 Subject
@@ -102,7 +121,6 @@ export function AddVerslagDialog() {
                 required
               />
             </div>
-            {/* Inhoud */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="inhoud" className="text-right">
                 Content
@@ -115,24 +133,25 @@ export function AddVerslagDialog() {
                 required
               />
             </div>
-            {/* VluchtCyclus ID */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="vlucht_cyclus_id" className="text-right">
-                Flight Cycle ID{" "}
-                <span className="text-xs text-muted-foreground">
-                  (Optional)
-                </span>
+              <Label htmlFor="vlucht_cyclus_select" className="text-right">
+                Flight Cycle <span className="text-xs text-muted-foreground">(Optional)</span>
               </Label>
-              {/* Option 1: Simple Input */}
-              <Input
-                id="vlucht_cyclus_id"
-                type="number"
-                min="1" // Prevent negative numbers
-                value={formData.vlucht_cyclus_id ?? ""} // Handle null/undefined for input value
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="Enter ID if known"
-              />
+              <Select
+                value={formData.vlucht_cyclus_id?.toString() || ""}
+                onValueChange={handleVluchtCyclusChange}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a flight cycle" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vluchtCycli.map((vluchtCyclus) => (
+                    <SelectItem key={vluchtCyclus.Id} value={vluchtCyclus.Id.toString()}>
+                      {`Flight Cycle ${vluchtCyclus.Id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
