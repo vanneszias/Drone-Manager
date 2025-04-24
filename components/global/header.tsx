@@ -8,13 +8,6 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { Button } from "../ui/button";
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-} from "@clerk/nextjs";
 
 export default function Header() {
   return (
