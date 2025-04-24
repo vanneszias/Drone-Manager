@@ -48,14 +48,14 @@ export default function CyclusList({ cycli }: CyclusListProps) {
 
   const getVluchtCyclusDetails = (id: number | null | undefined) => {
     if (!id) return "Geen vluchtcyclus";
-    const vluchtCyclus = vluchtCycli.find(vc => vc.Id === id);
+    const vluchtCyclus = vluchtCycli.find((vc) => vc.Id === id);
     if (!vluchtCyclus) return `Vluchtcyclus ${id}`;
 
     const details = [];
     if (vluchtCyclus.DroneId) details.push(`Drone ${vluchtCyclus.DroneId}`);
     if (vluchtCyclus.ZoneId) details.push(`Zone ${vluchtCyclus.ZoneId}`);
     if (vluchtCyclus.PlaatsId) details.push(`Plaats ${vluchtCyclus.PlaatsId}`);
-    
+
     return details.length > 0 ? details.join(" | ") : `Vluchtcyclus ${id}`;
   };
 
@@ -90,7 +90,9 @@ export default function CyclusList({ cycli }: CyclusListProps) {
               <TableCell className="font-medium">{cyclus.Id}</TableCell>
               <TableCell>{cyclus.startuur}</TableCell>
               <TableCell>{cyclus.tijdstip}</TableCell>
-              <TableCell>{getVluchtCyclusDetails(cyclus.VluchtCyclusId)}</TableCell>
+              <TableCell>
+                {getVluchtCyclusDetails(cyclus.VluchtCyclusId)}
+              </TableCell>
               <TableCell className="text-right">
                 <Button
                   variant="ghost"
