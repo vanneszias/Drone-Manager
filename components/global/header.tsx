@@ -33,12 +33,6 @@ export default function Header() {
             Testimonials
           </Link>
           <Link
-            href="#pricing"
-            className="transition-colors hover:text-foreground/80"
-          >
-            Pricing
-          </Link>
-          <Link
             href="#faq"
             className="transition-colors hover:text-foreground/80"
           >
