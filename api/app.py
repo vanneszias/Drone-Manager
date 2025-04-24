@@ -767,13 +767,13 @@ def delete_drone(drone_id):
 def get_cycli():
     try:
         # Allow filtering by VluchtCyclusId
-        vlucht_cyclus_id_str = request.args.get('vlucht_cyclus_id')
+        vlucht_cyclus_id_str = request.args.get('VluchtCyclusId')
         if vlucht_cyclus_id_str:
              try:
                  vlucht_cyclus_id = int(vlucht_cyclus_id_str)
                  cycli = CyclusHelper.get_cycli_by_vlucht_cyclus(vlucht_cyclus_id) # Use helper
              except ValueError:
-                 return jsonify({"error": "Invalid vlucht_cyclus_id parameter"}), 400
+                 return jsonify({"error": "Invalid VluchtCyclusId parameter"}), 400
         else:
              cycli = CyclusHelper.get_all_cycli()
         return jsonify(cycli)
@@ -806,12 +806,12 @@ def create_cyclus():
         tijdstip_obj = time.fromisoformat(data['tijdstip'])
 
         # Handle optional FK
-        vlucht_cyclus_id_val = data.get('vlucht_cyclus_id')
+        vlucht_cyclus_id_val = data.get('VluchtCyclusId')
         if vlucht_cyclus_id_val is not None:
             try:
                 vlucht_cyclus_id_val = int(vlucht_cyclus_id_val)
             except (ValueError, TypeError):
-                 raise ValueError("Invalid format for vlucht_cyclus_id, must be an integer or null")
+                 raise ValueError("Invalid format for VluchtCyclusId, must be an integer or null")
 
         cyclus = CyclusHelper.create_cyclus(
             startuur=startuur_obj,
@@ -843,15 +843,15 @@ def update_cyclus(cyclus_id):
             update_data['startuur'] = time.fromisoformat(data['startuur']).isoformat() # Pass as string
         if 'tijdstip' in data:
             update_data['tijdstip'] = time.fromisoformat(data['tijdstip']).isoformat() # Pass as string
-        if 'vlucht_cyclus_id' in data:
-            vc_id = data['vlucht_cyclus_id']
+        if 'VluchtCyclusId' in data:
+            vc_id = data['VluchtCyclusId']
             if vc_id is None:
                 update_data['VluchtCyclusId'] = None
             else:
                 try:
                     update_data['VluchtCyclusId'] = int(vc_id)
                 except (ValueError, TypeError):
-                    raise ValueError("Invalid format for vlucht_cyclus_id, must be an integer or null")
+                    raise ValueError("Invalid format for VluchtCyclusId, must be an integer or null")
 
         if not update_data:
              return jsonify({"error": "No valid fields provided for update"}), 400
@@ -898,10 +898,10 @@ def get_vlucht_cycli():
         # Allow filtering by FKs in VluchtCyclus table
         filters = {}
         param_map = {
-            'drone_id': 'DroneId',
-            'zone_id': 'ZoneId',
-            'plaats_id': 'PlaatsId',
-            'verslag_id': 'VerslagId'
+            'DroneId': 'DroneId',
+            'ZoneId': 'ZoneId',
+            'PlaatsId': 'PlaatsId',
+            'VerslagId': 'VerslagId'
         }
         for param_key, db_col in param_map.items():
             param_val_str = request.args.get(param_key)
@@ -946,10 +946,10 @@ def create_vlucht_cyclus():
     try:
         # At least one FK must be provided
         fk_values = {
-            'verslag_id': None,
-            'plaats_id': None,
-            'drone_id': None,
-            'zone_id': None
+            'VerslagId': None,
+            'PlaatsId': None,
+            'DroneId': None,
+            'ZoneId': None
         }
 
         # Extract provided FKs
@@ -992,10 +992,10 @@ def update_vlucht_cyclus(vlucht_cyclus_id):
     try:
         # Map JSON snake_case keys to DB PascalCase keys
         param_map = {
-            'verslag_id': 'VerslagId',
-            'plaats_id': 'PlaatsId',
-            'drone_id': 'DroneId',
-            'zone_id': 'ZoneId'
+            'VerslagId': 'VerslagId',
+            'PlaatsId': 'PlaatsId',
+            'DroneId': 'DroneId',
+            'ZoneIdd': 'ZoneIdd'
         }
 
         # Extract and validate each field if provided

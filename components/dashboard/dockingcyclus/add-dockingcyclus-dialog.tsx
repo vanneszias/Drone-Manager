@@ -74,6 +74,7 @@ export function AddDockingCyclusDialog() {
           setError(
             error instanceof Error ? error.message : "Failed to load data"
           );
+
         } finally {
           setDronesLoading(false);
           setDockingsLoading(false);
