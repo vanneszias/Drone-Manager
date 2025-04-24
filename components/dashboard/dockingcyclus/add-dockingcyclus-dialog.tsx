@@ -1,7 +1,7 @@
 "use client";
 
 // 1. Importeren van benodigde modules en componenten
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,13 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DockingCyclus } from '@/app/types'; // DockingCyclus type
-import { PlusCircle } from 'lucide-react'; // Icon
-import useDockingCyclus from '@/hooks/useDockingCyclus'; // Hook voor API-aanroepen
+import { DockingCyclus } from "@/app/types"; // DockingCyclus type
+import { PlusCircle } from "lucide-react"; // Icon
+import useDockingCyclus from "@/hooks/useDockingCyclus"; // Hook voor API-aanroepen
 
 // 2. Definiëren van het formuliertype
 type DockingCyclusFormData = {
-  status: DockingCyclus['status'];
+  status: DockingCyclus["status"];
   locatie: string;
   capaciteit: number;
 };
@@ -37,8 +37,8 @@ export function AddDockingCyclusDialog() {
   // 4. State voor formulierbeheer
   const [isOpen, setIsOpen] = useState(false); // Dialoog open/gesloten
   const [formData, setFormData] = useState<Partial<DockingCyclusFormData>>({
-    status: 'AVAILABLE', // Standaardstatus
-    locatie: '',
+    status: "AVAILABLE", // Standaardstatus
+    locatie: "",
     capaciteit: 0,
   });
   const [isLoading, setIsLoading] = useState(false); // Laadstatus
@@ -47,15 +47,15 @@ export function AddDockingCyclusDialog() {
   // 5. Inputveranderingen verwerken
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value, type } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [id]: type === 'number' ? Number(value) : value,
+      [id]: type === "number" ? Number(value) : value,
     }));
   };
 
   // 6. Selectieveranderingen verwerken
-  const handleSelectChange = (value: DockingCyclus['status']) => {
-    setFormData(prev => ({ ...prev, status: value }));
+  const handleSelectChange = (value: DockingCyclus["status"]) => {
+    setFormData((prev) => ({ ...prev, status: value }));
   };
 
   // 7. Formulierverzending verwerken
@@ -67,7 +67,7 @@ export function AddDockingCyclusDialog() {
       setIsLoading,
       setError,
       setIsOpen,
-      setFormData
+      () => setFormData({ status: "AVAILABLE", locatie: "", capaciteit: 0 }) // Reset formulier
     );
   };
 
@@ -86,7 +86,8 @@ export function AddDockingCyclusDialog() {
         <DialogHeader>
           <DialogTitle>Add New Docking Cyclus</DialogTitle>
           <DialogDescription>
-            Enter the details for the new docking cyclus. Click save when you're done.
+            Enter the details for the new docking cyclus. Click save when you're
+            done.
           </DialogDescription>
         </DialogHeader>
 
@@ -95,10 +96,12 @@ export function AddDockingCyclusDialog() {
           <div className="grid gap-4 py-4">
             {/* Locatieveld */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="locatie" className="text-right">Location</Label>
+              <Label htmlFor="locatie" className="text-right">
+                Location
+              </Label>
               <Input
                 id="locatie"
-                value={formData.locatie || ''}
+                value={formData.locatie || ""}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
@@ -107,12 +110,14 @@ export function AddDockingCyclusDialog() {
 
             {/* Capaciteitsveld */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="capaciteit" className="text-right">Capacity</Label>
+              <Label htmlFor="capaciteit" className="text-right">
+                Capacity
+              </Label>
               <Input
                 id="capaciteit"
                 type="number"
                 min="0"
-                value={formData.capaciteit ?? ''}
+                value={formData.capaciteit ?? ""}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
@@ -121,8 +126,13 @@ export function AddDockingCyclusDialog() {
 
             {/* Statusselectie */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">Status</Label>
-              <Select onValueChange={handleSelectChange} defaultValue={formData.status}>
+              <Label htmlFor="status" className="text-right">
+                Status
+              </Label>
+              <Select
+                onValueChange={handleSelectChange}
+                defaultValue={formData.status}
+              >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -141,9 +151,15 @@ export function AddDockingCyclusDialog() {
 
           {/* Voettekst met knoppen */}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : 'Save Docking Cyclus'}
+              {isLoading ? "Saving..." : "Save Docking Cyclus"}
             </Button>
           </DialogFooter>
         </form>
