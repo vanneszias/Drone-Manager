@@ -23,6 +23,43 @@ export default function Header() {
                 <Button>Sign Up</Button>
             </div>
         </div>
+<<<<<<< Updated upstream
+=======
+        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+          <Link
+            href="#features"
+            className="transition-colors hover:text-foreground/80"
+          >
+            Features
+          </Link>
+          <Link
+            href="#testimonials"
+            className="transition-colors hover:text-foreground/80"
+          >
+            Testimonials
+          </Link>
+          <Link
+            href="#faq"
+            className="transition-colors hover:text-foreground/80"
+          >
+            FAQ
+          </Link>
+        </nav>
+        <div className="flex items-center space-x-4">
+          <SignedOut>
+            <SignInButton>
+              <Button variant="outline">Log In</Button>
+            </SignInButton>
+            <SignUpButton>
+              <Button>Sign Up</Button>
+            </SignUpButton>
+          </SignedOut>
+          <SignedIn>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
+        </div>
+      </div>
+>>>>>>> Stashed changes
     </header>
     )
 }
