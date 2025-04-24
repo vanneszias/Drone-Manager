@@ -37,7 +37,7 @@ export function AddDockingCyclusDialog() {
   const [formData, setFormData] = useState<DockingCyclusFormData>({
     DroneId: 0,
     DockingId: 0,
-    CyclusId: 0
+    CyclusId: 0,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +63,7 @@ export function AddDockingCyclusDialog() {
           const [dronesData, dockingsData, cycliData] = await Promise.all([
             getDrones(),
             getDockings(),
-            getCycli()
+            getCycli(),
           ]);
 
           setDrones(dronesData);
@@ -71,7 +71,10 @@ export function AddDockingCyclusDialog() {
           setCycli(cycliData);
         } catch (error) {
           console.error("Failed to load data:", error);
-          setError(error instanceof Error ? error.message : "Failed to load data");
+          setError(
+            error instanceof Error ? error.message : "Failed to load data"
+          );
+
         } finally {
           setDronesLoading(false);
           setDockingsLoading(false);
@@ -115,8 +118,13 @@ export function AddDockingCyclusDialog() {
               </Label>
               <div className="col-span-3">
                 <Select
-                  value={formData.DroneId.toString()}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, DroneId: parseInt(value) }))}
+                  value={formData.DroneId ? formData.DroneId.toString() : ""}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      DroneId: parseInt(value),
+                    }))
+                  }
                   disabled={dronesLoading}
                 >
                   <SelectTrigger className="w-full">
@@ -124,7 +132,7 @@ export function AddDockingCyclusDialog() {
                   </SelectTrigger>
                   <SelectContent>
                     {dronesLoading ? (
-                      <SelectItem value="loading" disabled>
+                      <SelectItem value="" disabled>
                         Drones laden...
                       </SelectItem>
                     ) : drones.length > 0 ? (
@@ -134,7 +142,7 @@ export function AddDockingCyclusDialog() {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="none" disabled>
+                      <SelectItem value="" disabled>
                         Geen drones beschikbaar
                       </SelectItem>
                     )}
@@ -148,8 +156,15 @@ export function AddDockingCyclusDialog() {
               </Label>
               <div className="col-span-3">
                 <Select
-                  value={formData.DockingId.toString()}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, DockingId: parseInt(value) }))}
+                  value={
+                    formData.DockingId ? formData.DockingId.toString() : ""
+                  }
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      DockingId: parseInt(value),
+                    }))
+                  }
                   disabled={dockingsLoading}
                 >
                   <SelectTrigger className="w-full">
@@ -157,17 +172,24 @@ export function AddDockingCyclusDialog() {
                   </SelectTrigger>
                   <SelectContent>
                     {dockingsLoading ? (
-                      <SelectItem value="loading" disabled>
+                      <SelectItem value="" disabled>
                         Dockings laden...
                       </SelectItem>
                     ) : dockings.length > 0 ? (
                       dockings.map((docking) => (
-                        <SelectItem key={docking.Id} value={docking.Id.toString()}>
-                          {`${docking.locatie} (${docking.isbeschikbaar ? "Beschikbaar" : "Niet Beschikbaar"})`}
+                        <SelectItem
+                          key={docking.Id}
+                          value={docking.Id.toString()}
+                        >
+                          {`${docking.locatie} (${
+                            docking.isbeschikbaar
+                              ? "Beschikbaar"
+                              : "Niet Beschikbaar"
+                          })`}
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="none" disabled>
+                      <SelectItem value="" disabled>
                         Geen dockings beschikbaar
                       </SelectItem>
                     )}
@@ -181,8 +203,13 @@ export function AddDockingCyclusDialog() {
               </Label>
               <div className="col-span-3">
                 <Select
-                  value={formData.CyclusId.toString()}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, CyclusId: parseInt(value) }))}
+                  value={formData.CyclusId ? formData.CyclusId.toString() : ""}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      CyclusId: parseInt(value),
+                    }))
+                  }
                   disabled={cycliLoading}
                 >
                   <SelectTrigger className="w-full">
@@ -190,17 +217,20 @@ export function AddDockingCyclusDialog() {
                   </SelectTrigger>
                   <SelectContent>
                     {cycliLoading ? (
-                      <SelectItem value="loading" disabled>
+                      <SelectItem value="" disabled>
                         Cycli laden...
                       </SelectItem>
                     ) : cycli.length > 0 ? (
                       cycli.map((cyclus) => (
-                        <SelectItem key={cyclus.Id} value={cyclus.Id.toString()}>
-                          {`Cyclus ${cyclus.Id} (${cyclus.startuur} - ${cyclus.tijdstip})`}
+                        <SelectItem
+                          key={cyclus.Id}
+                          value={cyclus.Id.toString()}
+                        >
+                          {`Cyclus ${cyclus.Id}`}
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="none" disabled>
+                      <SelectItem value="" disabled>
                         Geen cycli beschikbaar
                       </SelectItem>
                     )}
@@ -211,7 +241,11 @@ export function AddDockingCyclusDialog() {
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+            >
               Annuleren
             </Button>
             <Button type="submit" disabled={isLoading}>
