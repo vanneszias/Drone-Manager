@@ -140,16 +140,16 @@ def update_event(event_id):
 
     update_data = {} # Use PascalCase keys for direct use in helper's kwargs
     try:
-        if 'start_datum' in data:
-            update_data['StartDatum'] = date.fromisoformat(data['start_datum']).isoformat()
-        if 'eind_datum' in data:
-            update_data['EindDatum'] = date.fromisoformat(data['eind_datum']).isoformat()
-        if 'start_tijd' in data:
-            update_data['StartTijd'] = time.fromisoformat(data['start_tijd']).isoformat()
-        if 'tijdsduur' in data:
-            update_data['Tijdsduur'] = time.fromisoformat(data['tijdsduur']).isoformat()
-        if 'naam' in data:
-            naam_str = str(data['naam']).strip()
+        if 'StartDatum' in data:
+            update_data['StartDatum'] = date.fromisoformat(data['StartDatum']).isoformat()
+        if 'EindDatum' in data:
+            update_data['EindDatum'] = date.fromisoformat(data['EindDatum']).isoformat()
+        if 'StartTijd' in data:
+            update_data['StartTijd'] = time.fromisoformat(data['StartTijd']).isoformat()
+        if 'Tijdsduur' in data:
+            update_data['Tijdsduur'] = time.fromisoformat(data['Tijdsduur']).isoformat()
+        if 'Naam' in data:
+            naam_str = str(data['Naam']).strip()
             if not naam_str: raise ValueError("Event name cannot be empty")
             update_data['Naam'] = naam_str
 

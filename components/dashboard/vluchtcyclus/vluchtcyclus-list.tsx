@@ -50,7 +50,6 @@ export default function VluchtCyclusList({
   return (
     <>
       <Table>
-        <TableCaption>Een lijst van alle vlucht cycli.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>

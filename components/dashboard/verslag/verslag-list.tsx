@@ -48,7 +48,6 @@ export default function VerslagList({ verslagen }: VerslagListProps) {
   return (
     <>
       <Table>
-        <TableCaption>Een lijst van alle verslagen.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>

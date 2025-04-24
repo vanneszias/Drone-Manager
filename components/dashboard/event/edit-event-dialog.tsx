@@ -120,7 +120,6 @@ export function EditEventDialog({
               <Input
                 id="StartTijd"
                 type="time"
-                step="1"
                 value={formData.StartTijd}
                 onChange={handleInputChange}
                 className="col-span-3"
@@ -147,7 +146,6 @@ export function EditEventDialog({
               <Input
                 id="Tijdsduur"
                 type="time"
-                step="1"
                 value={formData.Tijdsduur}
                 onChange={handleInputChange}
                 className="col-span-3"

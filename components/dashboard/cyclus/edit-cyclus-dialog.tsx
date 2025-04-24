@@ -78,7 +78,7 @@ export function EditCyclusDialog({
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="startuur" className="text-right">
-                Start Hour
+                Start Uur
               </Label>
               <Input
                 id="startuur"
@@ -90,16 +90,15 @@ export function EditCyclusDialog({
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tijdstip" className="text-right">
-                Time
+              <Label htmlFor="tijdsduur" className="text-right">
+                Tijdsduur
               </Label>
               <Input
-                id="tijdstip"
-                type="text"
+                id="tijdsduur"
+                type="time"
                 value={formData.tijdstip}
                 onChange={handleInputChange}
                 className="col-span-3"
-                placeholder="HH:mm:ss"
                 required
               />
             </div>

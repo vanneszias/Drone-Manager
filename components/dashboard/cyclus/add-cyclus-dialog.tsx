@@ -85,16 +85,15 @@ export function AddCyclusDialog() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tijdstip" className="text-right">
-                Tijdstip
+              <Label htmlFor="tijdsduur" className="text-right">
+                Tijdsduur
               </Label>
               <Input
-                id="tijdstip"
-                type="text"
+                id="tijdsduur"
+                type="time"
                 value={formData.tijdstip}
                 onChange={handleInputChange}
                 className="col-span-3"
-                placeholder="HH:mm:ss"
                 required
               />
             </div>

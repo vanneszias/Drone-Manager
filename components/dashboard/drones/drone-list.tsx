@@ -63,7 +63,6 @@ export default function DroneList({ drones }: DroneListProps) {
   return (
     <>
       <Table>
-        <TableCaption>Een lijst van alle drones.</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>
