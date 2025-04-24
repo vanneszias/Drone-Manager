@@ -24,21 +24,17 @@ import { PlusCircle } from "lucide-react";
 import useVluchtCyclus from "@/hooks/useVluchtCyclus";
 import { VluchtCyclus, Startplaats, Drone, Zone } from "@/app/types";
 
-type VluchtCyclusFormData = {
-  plaats_id: string;
-  drone_id: string;
-  zone_id: string;
-};
-
 export function AddVluchtCyclusDialog() {
   const { handleAddVluchtCyclus, getPlaces, getDrones, getZones } =
     useVluchtCyclus;
   const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState<VluchtCyclusFormData>({
-    plaats_id: "",
-    drone_id: "",
-    zone_id: "",
-  });
+  const [formData, setFormData] = useState<VluchtCyclus>({
+    VerslagId: null,
+    PlaatsId: null,
+    DroneId: null,
+    ZoneId: null,
+  } as VluchtCyclus);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [places, setPlaces] = useState<Startplaats[]>([]);
@@ -67,10 +63,7 @@ export function AddVluchtCyclusDialog() {
     }
   }, [isOpen]);
 
-  const handleSelectChange = (
-    value: string,
-    field: keyof VluchtCyclusFormData
-  ) => {
+  const handleSelectChange = (value: string, field: keyof VluchtCyclus) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -79,10 +72,12 @@ export function AddVluchtCyclusDialog() {
 
   const resetForm = () => {
     setFormData({
-      plaats_id: "",
-      drone_id: "",
-      zone_id: "",
-    });
+      VerslagId: null,
+      PlaatsId: null,
+      DroneId: null,
+      ZoneId: null,
+    } as VluchtCyclus);
+
     setError(null);
   };
 
@@ -91,9 +86,10 @@ export function AddVluchtCyclusDialog() {
     setError(null);
 
     const apiData = {
-      PlaatsId: formData.plaats_id ? parseInt(formData.plaats_id) : null,
-      DroneId: formData.drone_id ? parseInt(formData.drone_id) : null,
-      ZoneId: formData.zone_id ? parseInt(formData.zone_id) : null,
+      VerslagId: formData.VerslagId ? formData.VerslagId : null,
+      PlaatsId: formData.PlaatsId ? formData.PlaatsId : null,
+      DroneId: formData.DroneId ? formData.DroneId : null,
+      ZoneId: formData.ZoneId ? formData.ZoneId : null,
     };
 
     if (!apiData.PlaatsId && !apiData.DroneId && !apiData.ZoneId) {
@@ -132,10 +128,8 @@ export function AddVluchtCyclusDialog() {
                 Plaats
               </Label>
               <Select
-                value={formData.plaats_id}
-                onValueChange={(value) =>
-                  handleSelectChange(value, "plaats_id")
-                }
+                value={formData.PlaatsId?.toString() || ""}
+                onValueChange={(value) => handleSelectChange(value, "PlaatsId")}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Selecteer een plaats" />
@@ -154,8 +148,8 @@ export function AddVluchtCyclusDialog() {
                 Drone
               </Label>
               <Select
-                value={formData.drone_id}
-                onValueChange={(value) => handleSelectChange(value, "drone_id")}
+                value={formData.DroneId?.toString() || ""}
+                onValueChange={(value) => handleSelectChange(value, "DroneId")}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Selecteer een drone" />
@@ -174,8 +168,8 @@ export function AddVluchtCyclusDialog() {
                 Zone
               </Label>
               <Select
-                value={formData.zone_id}
-                onValueChange={(value) => handleSelectChange(value, "zone_id")}
+                value={formData.ZoneId?.toString() || ""}
+                onValueChange={(value) => handleSelectChange(value, "ZoneId")}
               >
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Selecteer een zone" />
