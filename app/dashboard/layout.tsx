@@ -2,79 +2,29 @@ import React from "react";
 import Header from "@/components/global/header"; // Or a new DashboardHeader
 import Footer from "@/components/global/footer"; // Or remove if dashboard doesn't need it
 
-// Optional: Create a simple sidebar component later if needed
-// import Sidebar from '@/components/dashboard/sidebar';
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Check if the current route is the root of the dashboard
+  const isDashboardRoot =
+    typeof window !== "undefined" && window.location.pathname === "/dashboard";
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <div className="flex flex-1">
-        <aside className="w-64 border-r p-4 hidden md:block">
-          <nav>
-            {/* Navigation Links */}
-            <a
-              href="/dashboard/event"
-              className="block py-2 px-4 hover:bg-muted rounded"
-            >
-              Events
-            </a>
-            <a
-              href="/dashboard/zones"
-              className="block py-2 px-4 hover:bg-muted rounded"
-            >
-              Zones
-            </a>
-            <a
-              href="/dashboard/drones"
-              className="block py-2 px-4 hover:bg-muted rounded"
-            >
-              Drones
-            </a>
-            <a
-              href="/dashboard/startplaats"
-              className="block py-2 px-4 hover:bg-muted rounded"
-            >
-              Startplaats
-            </a>
-            <a
-              href="/dashboard/vluchtcyclus"
-              className="block py-2 px-4 hover:bg-muted rounded"
-            >
-              Vlucht Cyclus
-            </a>
-            <a
-              href="/dashboard/cyclus"
-              className="block py-2 px-4 hover:bg-muted rounded"
-            >
-              Cyclus
-            </a>
-            <a
-              href="/dashboard/dockings"
-              className="block py-2 px-4 hover:bg-muted rounded"
-            >
-              Docking platformen
-            </a>
-            <a 
-              href="/dashboard/dockingcyclus"
-              className="block py-2 px-4 hover:bg-muted rounded"
-            >
-              Docking Cycli
-            </a>
-            <a
-              href="/dashboard/verslag"
-              className="block py-2 px-4 hover:bg-muted rounded"
-            >
-              Verslagen
-            </a>
-          </nav>
-        </aside>
-        <main className="flex-1 p-4 md:p-8">{children}</main>
-      </div>
+      <main className="flex-1 p-4 md:p-8 lg:p-12">
+        {!isDashboardRoot && (
+          <Link href="/dashboard" className="p-6">
+            <Button variant="secondary">Back to Dashboard</Button>
+          </Link>
+        )}
+        {children}
+      </main>
       <Footer />
     </div>
   );
