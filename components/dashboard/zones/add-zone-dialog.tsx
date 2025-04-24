@@ -106,11 +106,11 @@ export function AddZoneDialog() {
     }
 
     const zoneData: Zone = {
+      Id: 0,
       naam: formData.naam,
       breedte: breedteNum,
       lengte: lengteNum,
       EvenementId: evenementIdNum,
-      Id: 0, // Assuming ID is auto-generated
     };
 
     // Call the hook with the correctly structured data

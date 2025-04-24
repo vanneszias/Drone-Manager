@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Zone } from "@/app/types";
+import React, { useState, useEffect } from "react";
+import { Zone, Evenement } from "@/app/types";
 import {
   Table,
   TableHeader,
@@ -22,9 +22,28 @@ interface ZoneListProps {
 }
 
 export default function ZoneList({ zones }: ZoneListProps) {
-  const { handleDelete } = useZones;
+  const { handleDelete, fetchEvents } = useZones;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
+  const [events, setEvents] = useState<Evenement[]>([]);
+
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const eventData = await fetchEvents();
+        setEvents(eventData);
+      } catch (error) {
+        console.error("Error loading events:", error);
+      }
+    };
+    loadEvents();
+  }, [fetchEvents]);
+
+  const getEventName = (evenementId: number | null) => {
+    if (!evenementId) return "N/A";
+    const event = events.find((e) => e.Id === evenementId);
+    return event ? event.Naam : "N/A";
+  };
 
   const handleEdit = (zone: Zone) => {
     setSelectedZone(zone);
@@ -54,7 +73,7 @@ export default function ZoneList({ zones }: ZoneListProps) {
             <TableHead>Naam</TableHead>
             <TableHead>Breedte (m)</TableHead>
             <TableHead>Lengte (m)</TableHead>
-            <TableHead>Evenement ID</TableHead>
+            <TableHead>Evenement</TableHead>
             <TableHead className="text-right">Acties</TableHead>
           </TableRow>
         </TableHeader>
@@ -65,7 +84,7 @@ export default function ZoneList({ zones }: ZoneListProps) {
               <TableCell>{zone.naam}</TableCell>
               <TableCell>{zone.breedte.toFixed(2)} m</TableCell>
               <TableCell>{zone.lengte.toFixed(2)} m</TableCell>
-              <TableCell>{zone.EvenementId ?? "N/A"}</TableCell>
+              <TableCell>{getEventName(zone.EvenementId)}</TableCell>
               <TableCell className="text-right">
                 <Button
                   variant="ghost"

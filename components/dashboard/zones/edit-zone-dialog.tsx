@@ -12,7 +12,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Zone } from "@/app/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Zone, Evenement } from "@/app/types";
 import useZones from "@/hooks/useZones";
 
 interface EditZoneDialogProps {
@@ -29,16 +36,44 @@ export function EditZoneDialog({
   const [formData, setFormData] = useState<Zone>(zone);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [events, setEvents] = useState<Evenement[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
 
   useEffect(() => {
     setFormData(zone);
   }, [zone]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const loadEvents = async () => {
+        setEventsLoading(true);
+        try {
+          const fetchedEvents = await useZones.fetchEvents();
+          setEvents(fetchedEvents);
+        } catch (error) {
+          console.error("Failed to load events:", error);
+          setError(error instanceof Error ? error.message : "Failed to load events");
+          setEvents([]);
+        } finally {
+          setEventsLoading(false);
+        }
+      };
+      loadEvents();
+    }
+  }, [isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
       [id]: type === "number" ? parseFloat(value) : value,
+    }));
+  };
+
+  const handleEventSelect = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      EvenementId: parseInt(value, 10),
     }));
   };
 
@@ -59,7 +94,7 @@ export function EditZoneDialog({
       return;
     }
     if (isNaN(formData.EvenementId) || formData.EvenementId <= 0) {
-      setError("Please enter a valid Event ID.");
+      setError("Please select an event.");
       return;
     }
 
@@ -128,20 +163,39 @@ export function EditZoneDialog({
                 min="0.01"
               />
             </div>
-            {/* Event ID */}
+            {/* Event Selection */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="EvenementId" className="text-right">
-                Event ID
+                Event
               </Label>
-              <Input
-                id="EvenementId"
-                type="number"
-                value={formData.EvenementId}
-                onChange={handleInputChange}
-                className="col-span-3"
-                required
-                min="1"
-              />
+              <div className="col-span-3">
+                <Select
+                  value={formData.EvenementId?.toString()}
+                  onValueChange={handleEventSelect}
+                  disabled={eventsLoading}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select an event" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eventsLoading ? (
+                      <SelectItem value="loading" disabled>
+                        Loading events...
+                      </SelectItem>
+                    ) : events.length > 0 ? (
+                      events.map((event) => (
+                        <SelectItem key={event.Id} value={event.Id.toString()}>
+                          {event.Naam || `Event #${event.Id}`}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="none" disabled>
+                        No events available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
@@ -153,7 +207,7 @@ export function EditZoneDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || eventsLoading}>
               {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
