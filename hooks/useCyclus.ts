@@ -76,7 +76,7 @@ const handleAddCyclus = async (
       body: JSON.stringify({
         startuur: formData.startuur,
         tijdstip: formData.tijdstip,
-        vluchtcyclus_id: formData.VluchtCyclusId,
+        vluchtcyclus_id: formData.vluchtcyclus_id,
       }),
     });
 
@@ -119,7 +119,7 @@ const handleUpdateCyclus = async (
       body: JSON.stringify({
         startuur: formData.startuur,
         tijdstip: formData.tijdstip,
-        vluchtcyclus_id: formData.VluchtCyclusId,
+        vluchtcyclus_id: formData.vluchtcyclus_id,
       }),
     });
 
