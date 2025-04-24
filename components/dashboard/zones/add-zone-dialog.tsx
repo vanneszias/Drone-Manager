@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,35 +20,62 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Zone } from "@/app/types";
+import { Zone, Evenement } from "@/app/types";
 import { PlusCircle } from "lucide-react";
 import useZones from "@/hooks/useZones";
 
 // Basic type for form data
 interface ZoneFormData {
   naam: string;
-  breedte: number | string; // Use string initially for input, convert later
-  lengte: number | string; // Use string initially for input, convert later
-  evenement_id: number | string; // Use string initially for input, convert later
+  breedte: number | string;
+  lengte: number | string;
+  evenement_id: number | string;
 }
 
 export function AddZoneDialog() {
-  // Consider accepting eventId as a prop: { eventId }: { eventId?: number }
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<ZoneFormData>({
     naam: "",
     breedte: "",
     lengte: "",
-    evenement_id: "", // Or pre-fill if eventId prop is passed
+    evenement_id: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [events, setEvents] = useState<Evenement[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      const loadEvents = async () => {
+        setEventsLoading(true);
+        try {
+          const fetchedEvents = await useZones.fetchEvents();
+          setEvents(fetchedEvents);
+        } catch (error) {
+          console.error("Failed to load events:", error);
+          setError(error instanceof Error ? error.message : "Failed to load events");
+          setEvents([]);
+        } finally {
+          setEventsLoading(false);
+        }
+      };
+      loadEvents();
+    }
+  }, [isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value, type } = e.target;
+    const { id, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [id]: value, // Keep as string from input for now
+      [id]: value,
+    }));
+  };
+
+  const handleEventSelect = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      evenement_id: value,
     }));
   };
 
@@ -56,7 +83,7 @@ export function AddZoneDialog() {
     e.preventDefault();
     setError(null);
 
-    // --- Data Conversion and Validation ---
+    // Data Conversion and Validation
     const breedteNum = parseFloat(formData.breedte.toString());
     const lengteNum = parseFloat(formData.lengte.toString());
     const evenementIdNum = parseInt(formData.evenement_id.toString(), 10);
@@ -74,8 +101,7 @@ export function AddZoneDialog() {
       return;
     }
     if (isNaN(evenementIdNum) || evenementIdNum <= 0) {
-      // TODO: Add better validation/selection for Event ID
-      setError("Please enter a valid Event ID.");
+      setError("Please select an event.");
       return;
     }
 
@@ -122,7 +148,7 @@ export function AddZoneDialog() {
                 required
               />
             </div>
-            {/* Breedte (Width) */}
+            {/* Breedte (Width) - Keep as is */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="breedte" className="text-right">
                 Width
@@ -138,7 +164,7 @@ export function AddZoneDialog() {
                 min="0.01"
               />
             </div>
-            {/* Lengte (Length) */}
+            {/* Lengte (Length) - Keep as is */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="lengte" className="text-right">
                 Length
@@ -154,21 +180,39 @@ export function AddZoneDialog() {
                 min="0.01"
               />
             </div>
-            {/* Evenement ID (Event ID) - NEEDS BETTER UX (e.g., Dropdown) */}
+            {/* Evenement Selection - Replace input with dropdown */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="evenement_id" className="text-right">
-                Event ID
+                Event
               </Label>
-              <Input
-                id="evenement_id"
-                type="number"
-                value={formData.evenement_id}
-                onChange={handleInputChange}
-                className="col-span-3"
-                required
-                min="1"
-              />
-              {/* TODO: Replace this with a Select dropdown populated from /api/events */}
+              <div className="col-span-3">
+                <Select 
+                  value={formData.evenement_id.toString()} 
+                  onValueChange={handleEventSelect}
+                  disabled={eventsLoading}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select an event" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eventsLoading ? (
+                      <SelectItem value="loading" disabled>
+                        Loading events...
+                      </SelectItem>
+                    ) : events.length > 0 ? (
+                      events.map((event) => (
+                        <SelectItem key={event.Id} value={event.Id.toString()}>
+                          {event.Naam || `Event #${event.Id}`}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="none" disabled>
+                        No events available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
@@ -180,7 +224,7 @@ export function AddZoneDialog() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || eventsLoading}>
               {isLoading ? "Saving..." : "Save Zone"}
             </Button>
           </DialogFooter>
