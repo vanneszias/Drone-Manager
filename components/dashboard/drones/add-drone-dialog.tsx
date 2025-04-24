@@ -76,7 +76,7 @@ export function AddDroneDialog() {
     useDrones.handleAddDrone(
       {
         ...apiData,
-        id: 0, // ID is not needed for new drone
+        Id: 0, // ID is not needed for new drone
       },
       setIsLoading,
       setError,
@@ -101,15 +101,6 @@ export function AddDroneDialog() {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            {/* Add fields for Naam and Model if needed */}
-            {/* <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="naam" className="text-right">Name</Label>
-              <Input id="naam" value={formData.naam || ''} onChange={handleInputChange} className="col-span-3" required />
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-               <Label htmlFor="model" className="text-right">Model</Label>
-               <Input id="model" value={formData.model || ''} onChange={handleInputChange} className="col-span-3" required />
-             </div> */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="status" className="text-right">
                 Status
@@ -147,9 +138,7 @@ export function AddDroneDialog() {
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="mag_opstijgen" className="text-right">
                 Ready for Takeoff
-              </Label>{" "}
-              {/* Keep UI ID camelCase for state */}
-              {/* Simple Checkbox - consider using Shadcn's Checkbox component */}
+              </Label>
               <input
                 id="mag_opstijgen"
                 type="checkbox"
