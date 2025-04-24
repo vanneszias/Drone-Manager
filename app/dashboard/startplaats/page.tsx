@@ -1,30 +1,96 @@
-import React from 'react';
-import StartplaatsList from '@/components/dashboard/startplaats/startplaats-list';
-import { AddStartplaatsDialog } from '@/components/dashboard/startplaats/add-startplaats-dialog';
-import useStartplaats from '@/hooks/useStartplaats';
+"use client";
 
-export default async function StartplaatsPage() {
-  try {
-    const startplaats = await useStartplaats.getStartplaats();
+import React, { useState, useEffect } from "react";
+import StartplaatsList from "@/components/dashboard/startplaats/startplaats-list";
+import { AddStartplaatsDialog } from "@/components/dashboard/startplaats/add-startplaats-dialog";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import useStartplaats from "@/hooks/useStartplaats";
+import { Button } from "@/components/ui/button";
+import { Startplaats } from "@/app/types";
 
+export default function StartplaatsPage() {
+  const [startplaatsen, setStartplaatsen] = useState<Startplaats[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { getStartplaatsen } = useStartplaats;
+
+  useEffect(() => {
+    const loadStartplaatsen = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getStartplaatsen();
+        setStartplaatsen(data);
+      } catch (err) {
+        console.error("Error in loadStartplaatsen:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Er is een fout opgetreden bij het laden van de startplaatsen"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStartplaatsen();
+  }, [getStartplaatsen]);
+
+  if (loading) {
     return (
-      <div className="container mx-auto py-10">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Startplaats Management</h1>
-          <AddStartplaatsDialog />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Startplaatsen laden...</p>
         </div>
-        {/* Pass the fetched startplaats to the client component */}
-        <StartplaatsList startplaats={startplaats} />
-      </div>
-    );
-  } catch (error) {
-    console.error("Error rendering StartplaatsPage:", error);
-    return (
-      <div className="container mx-auto py-10 text-center text-red-500">
-        <h1 className="text-2xl font-bold mb-4">Error Loading Startplaats</h1>
-        <p>{error instanceof Error ? error.message : "An unknown error occurred."}</p>
-        <p>Please check the console logs for more details.</p>
       </div>
     );
   }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-destructive font-semibold">
+            Error bij het laden van startplaatsen
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">{error}</p>
+          <Button
+            onClick={() => window.location.reload()}
+            className="mt-4"
+            variant="outline"
+          >
+            Opnieuw proberen
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6">
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Startplaats Beheer</CardTitle>
+              <CardDescription>
+                Overzicht van alle startplaatsen ({startplaatsen.length})
+              </CardDescription>
+            </div>
+            <AddStartplaatsDialog />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <StartplaatsList startplaatsen={startplaatsen} />
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

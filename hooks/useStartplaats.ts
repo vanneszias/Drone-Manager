@@ -1,94 +1,112 @@
-import { Startplaats } from '@/app/types';
+import { Startplaats } from "@/app/types";
 
-const apiUrl = 'https://drone.ziasvannes.tech/api/startplaatsen';
+const apiUrl = "https://drone.ziasvannes.tech/api/startplaatsen";
 
-// Type for data sent/received by API/form
-interface StartplaatsInput {
-  locatie: string;
-  isbeschikbaar: boolean;
-}
+async function getStartplaatsen(): Promise<Startplaats[]> {
+  console.log(`Server-side fetch initiated for: ${apiUrl}`);
 
-// Type for the reset function argument
-type ResetStartplaatsForm = (formData: StartplaatsInput) => void;
-
-async function getStartplaats(): Promise<Startplaats[]> {
   try {
-    const res = await fetch(apiUrl, { cache: 'no-store', headers: { 'Accept': 'application/json' } });
-    if (!res.ok) throw new Error(`Failed to fetch startplaats: ${res.statusText}`);
+    const res = await fetch(apiUrl, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    console.log(`Fetch response status from ${apiUrl}: ${res.status}`);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(
+        `Error fetching ${apiUrl}: ${res.status} ${res.statusText}`
+      );
+      console.error(`Response body: ${errorText.substring(0, 500)}...`);
+      throw new Error(
+        `Failed to fetch startplaatsen. Status: ${res.status}. Check server logs.`
+      );
+    }
 
     const data = await res.json();
-    // Map API response (snake_case) to frontend type (camelCase if different, but here they match except casing)
-    return data.map((item: any) => ({
-      id: item.Id,
-      locatie: item.locatie,
-      isbeschikbaar: item.isbeschikbaar
-    })) as Startplaats[];
-
+    return data as Startplaats[];
   } catch (error) {
-    console.error('Error fetching startplaats:', error);
+    console.error(`Error in getStartplaatsen:`, error);
     throw error;
   }
 }
 
 const handleDelete = async (id: number) => {
-  if (!confirm(`Are you sure you want to delete startplaats ${id}?`)) return;
+  if (!confirm(`Weet je zeker dat je startplaats ${id} wilt verwijderen?`))
+    return;
+
   try {
-    const res = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${apiUrl}/${id}`, {
+      method: "DELETE",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
     if (!res.ok) {
-      let errorMsg = `Failed to delete startplaats (${res.status})`;
-      try {
-        const errorData = await res.json();
-        errorMsg = errorData.error || errorMsg;
-      } catch (e) { /* Ignore if response not JSON */ }
-      throw new Error(errorMsg);
+      throw new Error("Failed to delete startplaats");
     }
-    alert('Startplaats deleted successfully');
+
     window.location.reload();
   } catch (error) {
-    console.error('Error deleting startplaats:', error);
-    alert('An error occurred while deleting the startplaats.');
+    console.error("Error deleting startplaats:", error);
+    alert("Er is een fout opgetreden bij het verwijderen van de startplaats.");
   }
 };
 
 const handleAddStartplaats = async (
-  formData: StartplaatsInput, // Expect only relevant fields
+  formData: Startplaats,
   setIsLoading: (isLoading: boolean) => void,
   setError: (error: string | null) => void,
   setIsOpen: (isOpen: boolean) => void,
-  setFormData: ResetStartplaatsForm // Use the specific reset function type
+  setFormData: (formData: Startplaats) => void
 ) => {
   setIsLoading(true);
   setError(null);
 
-  // Validation
-  if (!formData.locatie) { setError("Locatie is required."); setIsLoading(false); return; }
-
   try {
     const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData), // Send snake_case data
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        locatie: formData.locatie,
+        isbeschikbaar: formData.isbeschikbaar,
+      }),
     });
 
     if (!response.ok) {
-      let errorMsg = `Failed to add startplaats (${response.status})`;
-      try {
-        const errorData = await response.json();
-        errorMsg = errorData.error || errorMsg;
-      } catch (e) { /* Ignore if response not JSON */ }
-      throw new Error(errorMsg);
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || `Failed to add startplaats (${response.status})`
+      );
     }
 
     setIsOpen(false);
-    setFormData({ locatie: '', isbeschikbaar: true }); // Reset form state
-    alert('Startplaats added successfully!');
+    setFormData({
+      locatie: "",
+      isbeschikbaar: true,
+    } as Startplaats);
+
+    alert("Startplaats succesvol toegevoegd!");
     window.location.reload();
-  } catch (error: any) {
-    setError(error.message || "An unknown error occurred.");
+  } catch (error) {
     console.error("Error adding startplaats:", error);
+    setError(
+      error instanceof Error ? error.message : "Failed to add startplaats"
+    );
   } finally {
     setIsLoading(false);
   }
 };
 
-export default { getStartplaats, handleDelete, handleAddStartplaats };
+export default {
+  getStartplaatsen,
+  handleDelete,
+  handleAddStartplaats,
+};

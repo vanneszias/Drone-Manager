@@ -1,13 +1,15 @@
 "use client";
 
-import React from 'react';
-import { DockingCyclus } from '@/app/types';
+import React from "react";
+import { DockingCyclus } from "@/app/types";
 
 type DockingCyclusListProps = {
   dockingCycli: DockingCyclus[];
 };
 
-export default function DockingCyclusList({ dockingCycli }: DockingCyclusListProps) {
+export default function DockingCyclusList({
+  dockingCycli,
+}: DockingCyclusListProps) {
   if (!dockingCycli || dockingCycli.length === 0) {
     return (
       <div className="text-center text-gray-500">
