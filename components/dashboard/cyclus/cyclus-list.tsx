@@ -43,11 +43,14 @@ export default function CyclusList({ cycli }: CyclusListProps) {
       }
     };
     loadVluchtCycli();
-  }, []);
+  }, [cycli]);
 
   const getVluchtCyclusDetails = (id: number | null | undefined) => {
+    console.log("vluchtCycli", vluchtCycli);
+    console.log("id", id);
+
     if (!id) return "Geen vluchtcyclus";
-    const vluchtCyclus = vluchtCycli.find((vc) => vc.Id === id);
+    const vluchtCyclus = vluchtCycli.find((vc) => vc.Id === Number(id));
     if (!vluchtCyclus) return `Vluchtcyclus ${id}`;
 
     const details = [];
