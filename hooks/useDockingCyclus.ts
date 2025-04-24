@@ -96,11 +96,10 @@ function useDockingCyclus() {
       setDockingCyclus((prev) => [...prev, createdDockingCyclus]);
       setIsOpen(false);
       setFormData({
-        id: 0,
         locatie: "",
         capaciteit: 0,
         status: "AVAILABLE",
-      });
+      } as DockingCyclus);
     } catch (error) {
       console.error("Failed to create docking cyclus:", error);
       setError("Failed to create docking cyclus. Please try again.");
