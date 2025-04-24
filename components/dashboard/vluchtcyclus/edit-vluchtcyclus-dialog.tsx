@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { VluchtCyclus, Startplaats, Drone, Zone } from "@/app/types";
+import { VluchtCyclus, Startplaats, Drone, Zone, Verslag } from "@/app/types";
 import useVluchtCyclus from "@/hooks/useVluchtCyclus";
 
 interface EditVluchtCyclusDialogProps {
@@ -32,14 +32,20 @@ export function EditVluchtCyclusDialog({
   isOpen,
   setIsOpen,
 }: EditVluchtCyclusDialogProps) {
-  const { handleUpdateVluchtCyclus, getPlaces, getDrones, getZones } =
-    useVluchtCyclus;
+  const {
+    handleUpdateVluchtCyclus,
+    getPlaces,
+    getDrones,
+    getZones,
+    getVerslagen,
+  } = useVluchtCyclus;
   const [formData, setFormData] = useState<VluchtCyclus>(vluchtCyclus);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [places, setPlaces] = useState<Startplaats[]>([]);
   const [drones, setDrones] = useState<Drone[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
+  const [verslagen, setVerslagen] = useState<Verslag[]>([]);
 
   useEffect(() => {
     setFormData(vluchtCyclus);
@@ -48,14 +54,17 @@ export function EditVluchtCyclusDialog({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [placesData, dronesData, zonesData] = await Promise.all([
-          getPlaces(),
-          getDrones(),
-          getZones(),
-        ]);
+        const [placesData, dronesData, zonesData, verslagenData] =
+          await Promise.all([
+            getPlaces(),
+            getDrones(),
+            getZones(),
+            getVerslagen(),
+          ]);
         setPlaces(placesData);
         setDrones(dronesData);
         setZones(zonesData);
+        setVerslagen(verslagenData);
       } catch (error) {
         console.error("Error fetching data:", error);
         setError("Failed to load options");
@@ -105,6 +114,29 @@ export function EditVluchtCyclusDialog({
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="verslag_select" className="text-right">
+                Verslag
+              </Label>
+              <Select
+                value={formData.VerslagId?.toString() || ""}
+                onValueChange={(value) =>
+                  handleSelectChange(value, "VerslagId")
+                }
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een verslag" />
+                </SelectTrigger>
+                <SelectContent>
+                  {verslagen.map((verslag) => (
+                    <SelectItem key={verslag.Id} value={verslag.Id.toString()}>
+                      {verslag.onderwerp}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="plaats_select" className="text-right">
                 Plaats
               </Label>
@@ -124,6 +156,7 @@ export function EditVluchtCyclusDialog({
                 </SelectContent>
               </Select>
             </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="drone_select" className="text-right">
                 Drone
@@ -144,6 +177,7 @@ export function EditVluchtCyclusDialog({
                 </SelectContent>
               </Select>
             </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="zone_select" className="text-right">
                 Zone

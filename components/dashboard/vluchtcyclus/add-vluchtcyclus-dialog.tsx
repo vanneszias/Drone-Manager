@@ -22,11 +22,16 @@ import { Label } from "@/components/ui/label";
 import { PlusCircle } from "lucide-react";
 
 import useVluchtCyclus from "@/hooks/useVluchtCyclus";
-import { VluchtCyclus, Startplaats, Drone, Zone } from "@/app/types";
+import { VluchtCyclus, Startplaats, Drone, Zone, Verslag } from "@/app/types";
 
 export function AddVluchtCyclusDialog() {
-  const { handleAddVluchtCyclus, getPlaces, getDrones, getZones } =
-    useVluchtCyclus;
+  const {
+    handleAddVluchtCyclus,
+    getPlaces,
+    getDrones,
+    getZones,
+    getVerslagen,
+  } = useVluchtCyclus;
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<VluchtCyclus>({
     VerslagId: null,
@@ -40,18 +45,22 @@ export function AddVluchtCyclusDialog() {
   const [places, setPlaces] = useState<Startplaats[]>([]);
   const [drones, setDrones] = useState<Drone[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
+  const [verslagen, setVerslagen] = useState<Verslag[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [placesData, dronesData, zonesData] = await Promise.all([
-          getPlaces(),
-          getDrones(),
-          getZones(),
-        ]);
+        const [placesData, dronesData, zonesData, verslagenData] =
+          await Promise.all([
+            getPlaces(),
+            getDrones(),
+            getZones(),
+            getVerslagen(),
+          ]);
         setPlaces(placesData);
         setDrones(dronesData);
         setZones(zonesData);
+        setVerslagen(verslagenData);
       } catch (error) {
         console.error("Error fetching data:", error);
         setError("Failed to load options");
@@ -137,9 +146,9 @@ export function AddVluchtCyclusDialog() {
                   <SelectValue placeholder="Selecteer een verslag" />
                 </SelectTrigger>
                 <SelectContent>
-                  {places.map((place) => (
-                    <SelectItem key={place.Id} value={place.Id.toString()}>
-                      {place.locatie}
+                  {verslagen.map((verslag) => (
+                    <SelectItem key={verslag.Id} value={verslag.Id.toString()}>
+                      {verslag.onderwerp}
                     </SelectItem>
                   ))}
                 </SelectContent>
