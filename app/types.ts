@@ -1,7 +1,7 @@
 import { DateRange } from "react-day-picker";
 
 export interface User {
-  id: string;
+  Id: string;
   name: string;
   email: string;
 }
@@ -13,7 +13,7 @@ export interface ApiResponse<T> {
 }
 
 export interface Drone {
-  id: number;
+  Id: number;
   status: "AVAILABLE" | "IN_USE" | "MAINTENANCE" | "OFFLINE";
   batterij: number; // Battery level
   magOpstijgen: boolean; // Allowed to take off
@@ -38,13 +38,13 @@ export interface Zone {
 }
 
 export interface Startplaats {
-  id: number;
+  Id: number;
   locatie: string;
   isbeschikbaar: boolean;
 }
 
 export interface DockingCyclus {
-  id: number;
+  Id: number;
   dockingId: number;
   cyclusId: number;
   droneId: number;
@@ -52,7 +52,7 @@ export interface DockingCyclus {
 
 // Define and export the Docking type
 export interface Docking {
-  id: number;
+  Id: number;
   locatie: string;
   isbeschikbaar: boolean;
 }

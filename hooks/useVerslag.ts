@@ -108,8 +108,64 @@ const handleAddVerslag = async (
   }
 };
 
+const handleUpdateVerslag = async (
+  formData: Verslag,
+  setIsLoading: (isLoading: boolean) => void,
+  setError: (error: string | null) => void,
+  setIsOpen: (isOpen: boolean) => void,
+  setFormData: (formData: Verslag) => void
+) => {
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const response = await fetch(`${apiUrl}/${formData.Id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        onderwerp: formData.onderwerp,
+        inhoud: formData.inhoud,
+        isverzonden: formData.isverzonden,
+        isgeaccepteerd: formData.isgeaccepteerd,
+        VluchtCyclusId: formData.VluchtCyclusId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || `Failed to update verslag (${response.status})`
+      );
+    }
+
+    setIsOpen(false);
+    setFormData({
+      Id: 0,
+      onderwerp: "",
+      inhoud: "",
+      isverzonden: false,
+      isgeaccepteerd: false,
+      VluchtCyclusId: null,
+    } as Verslag);
+
+    alert("Verslag successfully updated!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error updating verslag:", error);
+    setError(
+      error instanceof Error ? error.message : "Failed to update verslag"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 export default {
   getVerslagen,
   handleDelete,
   handleAddVerslag,
+  handleUpdateVerslag,
 };

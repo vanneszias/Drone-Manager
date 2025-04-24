@@ -106,8 +106,59 @@ const handleAddZone = async (
   }
 };
 
+const handleUpdateZone = async (
+  formData: Zone,
+  setIsLoading: (isLoading: boolean) => void,
+  setError: (error: string | null) => void,
+  setIsOpen: (isOpen: boolean) => void,
+  setFormData: (formData: Zone) => void
+) => {
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const response = await fetch(`${apiUrl}/${formData.Id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        naam: formData.naam,
+        breedte: formData.breedte,
+        lengte: formData.lengte,
+        EvenementId: formData.EvenementId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || `Failed to update zone (${response.status})`
+      );
+    }
+
+    setIsOpen(false);
+    setFormData({
+      naam: "",
+      breedte: 0,
+      lengte: 0,
+      EvenementId: 0,
+    } as Zone);
+
+    alert("Zone successfully updated!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error updating zone:", error);
+    setError(error instanceof Error ? error.message : "Failed to update zone");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 export default {
   getZones,
   handleDelete,
   handleAddZone,
+  handleUpdateZone,
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Drone } from "@/app/types";
 import {
   Table,
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2 } from "lucide-react";
 import useDrones from "@/hooks/useDrones";
+import { EditDroneDialog } from "./edit-drone-dialog";
 
 interface DroneListProps {
   drones: Drone[];
@@ -23,6 +24,13 @@ interface DroneListProps {
 
 export default function DroneList({ drones }: DroneListProps) {
   const { handleDelete } = useDrones;
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedDrone, setSelectedDrone] = useState<Drone | null>(null);
+
+  const handleEdit = (drone: Drone) => {
+    setSelectedDrone(drone);
+    setIsEditOpen(true);
+  };
 
   if (!drones || drones.length === 0) {
     return (
@@ -53,65 +61,79 @@ export default function DroneList({ drones }: DroneListProps) {
   };
 
   return (
-    <Table>
-      <TableCaption>Een lijst van alle drones.</TableCaption>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[100px]">ID</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Batterij (%)</TableHead>
-          <TableHead>Mag Opstijgen</TableHead>
-          <TableHead className="text-right">Acties</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {drones.map((drone) => (
-          <TableRow key={drone.id}>
-            <TableCell className="font-medium">{drone.id}</TableCell>
-            <TableCell>
-              <Badge
-                variant="secondary"
-                className={getStatusBadgeStyle(drone.status)}
-              >
-                {drone.status}
-              </Badge>
-            </TableCell>
-            <TableCell>{drone.batterij}%</TableCell>
-            <TableCell>
-              <Badge
-                variant={drone.magOpstijgen ? "default" : "secondary"}
-                className={
-                  drone.magOpstijgen
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }
-              >
-                {drone.magOpstijgen ? "Ja" : "Nee"}
-              </Badge>
-            </TableCell>
-            <TableCell className="text-right">
-              <Button variant="ghost" size="icon" className="mr-2" disabled>
-                <Edit className="h-4 w-4" />
-                <span className="sr-only">Bewerk drone</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDelete(drone.id)}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-                <span className="sr-only">Verwijder drone</span>
-              </Button>
-            </TableCell>
+    <>
+      <Table>
+        <TableCaption>Een lijst van alle drones.</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">ID</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Batterij (%)</TableHead>
+            <TableHead>Mag Opstijgen</TableHead>
+            <TableHead className="text-right">Acties</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-      <TableFooter>
-        <TableRow>
-          <TableCell colSpan={4}>Totaal Drones</TableCell>
-          <TableCell className="text-right">{drones.length}</TableCell>
-        </TableRow>
-      </TableFooter>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {drones.map((drone) => (
+            <TableRow key={drone.Id}>
+              <TableCell className="font-medium">{drone.Id}</TableCell>
+              <TableCell>
+                <Badge
+                  variant="secondary"
+                  className={getStatusBadgeStyle(drone.status)}
+                >
+                  {drone.status}
+                </Badge>
+              </TableCell>
+              <TableCell>{drone.batterij}%</TableCell>
+              <TableCell>
+                <Badge
+                  variant={drone.magOpstijgen ? "default" : "secondary"}
+                  className={
+                    drone.magOpstijgen
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }
+                >
+                  {drone.magOpstijgen ? "Ja" : "Nee"}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-right">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="mr-2"
+                  onClick={() => handleEdit(drone)}
+                >
+                  <Edit className="h-4 w-4" />
+                  <span className="sr-only">Bewerk drone</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(drone.Id)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                  <span className="sr-only">Verwijder drone</span>
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TableCell colSpan={4}>Totaal Drones</TableCell>
+            <TableCell className="text-right">{drones.length}</TableCell>
+          </TableRow>
+        </TableFooter>
+      </Table>
+      {selectedDrone && (
+        <EditDroneDialog
+          drone={selectedDrone}
+          isOpen={isEditOpen}
+          setIsOpen={setIsEditOpen}
+        />
+      )}
+    </>
   );
 }

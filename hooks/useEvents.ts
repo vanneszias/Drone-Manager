@@ -108,8 +108,61 @@ const handleAddEvent = async (
   }
 };
 
+const handleUpdateEvent = async (
+  formData: Event,
+  setIsLoading: (isLoading: boolean) => void,
+  setError: (error: string | null) => void,
+  setIsOpen: (isOpen: boolean) => void,
+  setFormData: (formData: Event) => void
+) => {
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const response = await fetch(`${apiUrl}/${formData.Id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        Naam: formData.Naam,
+        StartDatum: formData.StartDatum,
+        EindDatum: formData.EindDatum,
+        StartTijd: formData.StartTijd,
+        Tijdsduur: formData.Tijdsduur,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || `Failed to update event (${response.status})`
+      );
+    }
+
+    setIsOpen(false);
+    setFormData({
+      Naam: "",
+      StartDatum: "",
+      EindDatum: "",
+      StartTijd: "",
+      Tijdsduur: "",
+    } as Event);
+
+    alert("Event successfully updated!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error updating event:", error);
+    setError(error instanceof Error ? error.message : "Failed to update event");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 export default {
   getEvents,
   handleDelete,
   handleAddEvent,
+  handleUpdateEvent,
 };
