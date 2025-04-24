@@ -67,17 +67,33 @@ class VluchtCyclusHelper:
             raise ValueError("Cannot create VluchtCyclus with no associated IDs.")
 
         try:
+            # Validate references before insert
+            if "DroneId" in vlucht_cyclus_data:
+                drone_response = supabase.table("Drone").select("*").eq("Id", vlucht_cyclus_data["DroneId"]).execute()
+                if not drone_response.data:
+                    raise ValueError(f"Drone with ID {vlucht_cyclus_data['DroneId']} does not exist.")
+            if "ZoneId" in vlucht_cyclus_data:
+                zone_response = supabase.table("Zone").select("*").eq("Id", vlucht_cyclus_data["ZoneId"]).execute()
+                if not zone_response.data:
+                    raise ValueError(f"Zone with ID {vlucht_cyclus_data['ZoneId']} does not exist.")
+            if "PlaatsId" in vlucht_cyclus_data:
+                plaats_response = supabase.table("Startplaats").select("*").eq("Id", vlucht_cyclus_data["PlaatsId"]).execute()
+                if not plaats_response.data:
+                    raise ValueError(f"Startplaats with ID {vlucht_cyclus_data['PlaatsId']} does not exist.")
+            if "VerslagId" in vlucht_cyclus_data:
+                verslag_response = supabase.table("Verslag").select("*").eq("Id", vlucht_cyclus_data["VerslagId"]).execute()
+                if not verslag_response.data:
+                    raise ValueError(f"Verslag with ID {vlucht_cyclus_data['VerslagId']} does not exist.")
+
             response = supabase.table(VluchtCyclusHelper.TABLE_NAME).insert(vlucht_cyclus_data).execute()
-            if response.data:
-                return response.data[0]
-            else:
+            if not response.data:
+                error_msg = "Failed to create VluchtCyclus"
                 if hasattr(response, 'error') and response.error:
-                    logger.error(f"Supabase create vlucht cyclus error: {response.error.message}")
-                    if "foreign key constraint" in response.error.message:
-                        raise ValueError("One or more reference IDs do not exist.")
-                else:
-                    logger.error("Supabase create vlucht cyclus failed, no data returned.")
-                return None
+                    error_msg = f"Database error: {response.error.message}"
+                logger.error(f"Create VluchtCyclus failed: {error_msg}")
+                raise ValueError(error_msg)
+            
+            return response.data[0]
         except Exception as e:
             if "violates foreign key constraint" in str(e):
                 logger.warning(f"Create VluchtCyclus failed due to invalid FK in data {vlucht_cyclus_data}")

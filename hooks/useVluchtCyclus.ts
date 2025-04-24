@@ -169,6 +169,20 @@ const handleAddVluchtCyclus = async (
   setIsLoading(true);
   setError(null);
 
+  // Validate at least one field is set
+  if (
+    !formData.VerslagId &&
+    !formData.PlaatsId &&
+    !formData.DroneId &&
+    !formData.ZoneId
+  ) {
+    setError(
+      "Je moet minstens één optie selecteren (Verslag, Plaats, Drone of Zone)."
+    );
+    setIsLoading(false);
+    return;
+  }
+
   try {
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -186,9 +200,34 @@ const handleAddVluchtCyclus = async (
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(
-        errorData.error || `Failed to add vlucht cyclus (${response.status})`
-      );
+      const errorMessage =
+        errorData.error ||
+        `Fout bij het toevoegen van vluchtcyclus (${response.status})`;
+
+      // Map specific backend errors to user-friendly messages
+      if (
+        errorMessage.includes("Drone with ID") &&
+        errorMessage.includes("does not exist")
+      ) {
+        throw new Error("De geselecteerde drone bestaat niet meer.");
+      } else if (
+        errorMessage.includes("Zone with ID") &&
+        errorMessage.includes("does not exist")
+      ) {
+        throw new Error("De geselecteerde zone bestaat niet meer.");
+      } else if (
+        errorMessage.includes("Startplaats with ID") &&
+        errorMessage.includes("does not exist")
+      ) {
+        throw new Error("De geselecteerde startplaats bestaat niet meer.");
+      } else if (
+        errorMessage.includes("Verslag with ID") &&
+        errorMessage.includes("does not exist")
+      ) {
+        throw new Error("Het geselecteerde verslag bestaat niet meer.");
+      } else {
+        throw new Error(errorMessage);
+      }
     }
 
     setIsOpen(false);
@@ -222,7 +261,20 @@ const handleUpdateVluchtCyclus = async (
   setError(null);
 
   try {
-    // Ensure all values are proper numbers or null
+    // Validate that at least one field will be set
+    if (
+      !formData.VerslagId &&
+      !formData.PlaatsId &&
+      !formData.DroneId &&
+      !formData.ZoneId
+    ) {
+      setError(
+        "Je moet minstens één optie selecteren (Verslag, Plaats, Drone of Zone)."
+      );
+      setIsLoading(false);
+      return;
+    }
+
     const updateData = {
       VerslagId: formData.VerslagId || null,
       PlaatsId: formData.PlaatsId || null,
@@ -244,10 +296,38 @@ const handleUpdateVluchtCyclus = async (
     if (!response.ok) {
       const errorData = await response.json();
       console.error("Update vluchtcyclus error details:", errorData);
-      throw new Error(
+      const errorMessage =
         errorData.error ||
-          `Kan vluchtcyclus niet bijwerken (${response.status})`
-      );
+        `Fout bij het bijwerken van vluchtcyclus (${response.status})`;
+
+      // Map specific backend errors to user-friendly messages
+      if (
+        errorMessage.includes("Drone with ID") &&
+        errorMessage.includes("does not exist")
+      ) {
+        throw new Error("De geselecteerde drone bestaat niet meer.");
+      } else if (
+        errorMessage.includes("Zone with ID") &&
+        errorMessage.includes("does not exist")
+      ) {
+        throw new Error("De geselecteerde zone bestaat niet meer.");
+      } else if (
+        errorMessage.includes("Startplaats with ID") &&
+        errorMessage.includes("does not exist")
+      ) {
+        throw new Error("De geselecteerde startplaats bestaat niet meer.");
+      } else if (
+        errorMessage.includes("Verslag with ID") &&
+        errorMessage.includes("does not exist")
+      ) {
+        throw new Error("Het geselecteerde verslag bestaat niet meer.");
+      } else if (errorMessage.includes("at least one ID must remain set")) {
+        throw new Error(
+          "Je moet minstens één optie selecteren (Verslag, Plaats, Drone of Zone)."
+        );
+      } else {
+        throw new Error(errorMessage);
+      }
     }
 
     setIsOpen(false);
