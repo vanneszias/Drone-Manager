@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { VluchtCyclus } from "@/app/types";
+import { VluchtCyclus, Startplaats, Drone, Zone } from "@/app/types";
 import useVluchtCyclus from "@/hooks/useVluchtCyclus";
 
 interface EditVluchtCyclusDialogProps {
@@ -37,9 +37,9 @@ export function EditVluchtCyclusDialog({
   const [formData, setFormData] = useState<VluchtCyclus>(vluchtCyclus);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [places, setPlaces] = useState<any[]>([]);
-  const [drones, setDrones] = useState<any[]>([]);
-  const [zones, setZones] = useState<any[]>([]);
+  const [places, setPlaces] = useState<Startplaats[]>([]);
+  const [drones, setDrones] = useState<Drone[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
 
   useEffect(() => {
     setFormData(vluchtCyclus);
@@ -79,7 +79,7 @@ export function EditVluchtCyclusDialog({
     setError(null);
 
     if (!formData.PlaatsId && !formData.DroneId && !formData.ZoneId) {
-      setError("At least one ID (Place, Drone, or Zone) is required");
+      setError("Minstens één optie (Plaats, Drone, of Zone) is vereist");
       return;
     }
 
@@ -118,7 +118,7 @@ export function EditVluchtCyclusDialog({
                 <SelectContent>
                   {places.map((place) => (
                     <SelectItem key={place.Id} value={place.Id.toString()}>
-                      {place.Naam}
+                      {place.locatie}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -138,7 +138,7 @@ export function EditVluchtCyclusDialog({
                 <SelectContent>
                   {drones.map((drone) => (
                     <SelectItem key={drone.Id} value={drone.Id.toString()}>
-                      {drone.Naam}
+                      {`Drone ${drone.Id} - ${drone.status}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -158,7 +158,7 @@ export function EditVluchtCyclusDialog({
                 <SelectContent>
                   {zones.map((zone) => (
                     <SelectItem key={zone.Id} value={zone.Id.toString()}>
-                      {zone.Naam}
+                      {zone.naam}
                     </SelectItem>
                   ))}
                 </SelectContent>
