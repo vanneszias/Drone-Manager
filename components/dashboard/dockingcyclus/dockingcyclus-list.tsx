@@ -53,21 +53,56 @@ export default function DockingCyclusList({
   const getDroneDetails = (droneId: number) => {
     const drone = drones.find((d) => d.Id === droneId);
     if (!drone) return `Drone ${droneId}`;
-    return `Drone ${drone.Id} (${drone.status})`;
+    return (
+      <div className="space-y-1">
+        <div className="font-medium">Drone {drone.Id}</div>
+        <div className="text-sm">
+          <span
+            className={`font-semibold ${
+              drone.status === "AVAILABLE"
+                ? "text-green-600"
+                : "text-orange-600"
+            }`}
+          >
+            Status: {drone.status}
+          </span>
+        </div>
+        <div className="text-sm">Battery: {drone.batterij}%</div>
+      </div>
+    );
   };
 
   const getDockingDetails = (dockingId: number) => {
     const docking = dockings.find((d) => d.Id === dockingId);
     if (!docking) return `Docking ${dockingId}`;
-    return `${docking.locatie} (${
-      docking.isbeschikbaar ? "Available" : "Not Available"
-    })`;
+    return (
+      <div className="space-y-1">
+        <div className="font-medium">{docking.locatie}</div>
+        <div className="text-sm">
+          <span
+            className={`font-semibold ${
+              docking.isbeschikbaar ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {docking.isbeschikbaar ? "Available" : "Not Available"}
+          </span>
+        </div>
+      </div>
+    );
   };
 
   const getCyclusDetails = (cyclusId: number) => {
     const cyclus = cycli.find((c) => c.Id === cyclusId);
     if (!cyclus) return `Cyclus ${cyclusId}`;
-    return `Cyclus ${cyclus.Id} (${cyclus.startuur})`;
+    return (
+      <div className="space-y-1">
+        <div className="font-medium">Cyclus {cyclus.Id}</div>
+        <div className="text-sm">
+          <div>Start Time: {cyclus.startuur}</div>
+          <div>Scheduled Time: {cyclus.tijdstip}</div>
+        </div>
+      </div>
+    );
   };
 
   const handleEdit = (dockingCyclus: DockingCyclus) => {
