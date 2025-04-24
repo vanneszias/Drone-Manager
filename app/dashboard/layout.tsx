@@ -12,19 +12,18 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+
   const pathname = usePathname();
   const isDashboardRoot = pathname === "/dashboard";
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1 p-4 md:p-8">
+      <main className="flex-1 p-4 md:p-8 lg:p-12">
         {!isDashboardRoot && (
-          <div className="mb-4">
-            <Link href="/dashboard">
-              <Button variant="outline">← Back to Dashboard</Button>
-            </Link>
-          </div>
+          <Link href="/dashboard" className="p-6">
+            <Button variant="secondary">Back to Dashboard</Button>
+          </Link>
         )}
         {children}
       </main>
