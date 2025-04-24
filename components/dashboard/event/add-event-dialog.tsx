@@ -1,8 +1,4 @@
 "use client";
-{
-  /* TODO: Use shadcn/ui components for the time inputs */
-}
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -139,7 +135,6 @@ export function AddEventDialog() {
               <Label htmlFor="start_tijd" className="text-right">
                 Start Time
               </Label>
-              {/* Add step="1" if seconds precision is needed by the backend */}
               <Input
                 id="start_tijd"
                 type="time"
@@ -147,7 +142,6 @@ export function AddEventDialog() {
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
-                step="1"
               />
             </div>
 
@@ -171,7 +165,6 @@ export function AddEventDialog() {
               <Label htmlFor="tijdsduur" className="text-right">
                 Duration
               </Label>
-              {/* Add step="1" if seconds precision is needed by the backend */}
               <Input
                 id="tijdsduur"
                 type="time"
@@ -179,7 +172,6 @@ export function AddEventDialog() {
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
-                step="1"
               />
             </div>
           </div>
