@@ -46,13 +46,19 @@ const handleDelete = async (id: number) => {
     });
 
     if (!res.ok) {
-      throw new Error("Failed to delete verslag");
+      const errorData = await res.json();
+      console.error("Delete verslag error details:", errorData);
+      throw new Error(errorData.error || "Failed to delete verslag");
     }
 
     window.location.reload();
   } catch (error) {
     console.error("Error deleting verslag:", error);
-    alert("Er is een fout opgetreden bij het verwijderen van het verslag.");
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Er is een fout opgetreden bij het verwijderen van het verslag."
+    );
   }
 };
 

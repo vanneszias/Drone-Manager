@@ -135,14 +135,26 @@ const handleDelete = async (id: number) => {
     });
 
     if (!res.ok) {
-      throw new Error("Failed to delete vlucht cyclus");
+      const errorData = await res.json();
+      console.error("Delete vlucht cyclus error details:", errorData);
+
+      if (errorData.error?.toLowerCase().includes("references exist")) {
+        alert(
+          "Deze vluchtcyclus kan niet worden verwijderd omdat deze nog in gebruik is door andere onderdelen van het systeem."
+        );
+        return;
+      }
+
+      throw new Error(errorData.error || "Failed to delete vlucht cyclus");
     }
 
     window.location.reload();
   } catch (error) {
     console.error("Error deleting vlucht cyclus:", error);
     alert(
-      "Er is een fout opgetreden bij het verwijderen van de vlucht cyclus."
+      error instanceof Error
+        ? error.message
+        : "Er is een fout opgetreden bij het verwijderen van de vlucht cyclus."
     );
   }
 };
@@ -210,36 +222,43 @@ const handleUpdateVluchtCyclus = async (
   setError(null);
 
   try {
+    // Ensure all values are proper numbers or null
+    const updateData = {
+      VerslagId: formData.VerslagId || null,
+      PlaatsId: formData.PlaatsId || null,
+      DroneId: formData.DroneId || null,
+      ZoneId: formData.ZoneId || null,
+    };
+
+    console.log("Updating vluchtcyclus with data:", updateData);
+
     const response = await fetch(`${apiUrl}/${formData.Id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({
-        VerslagId: formData.VerslagId,
-        PlaatsId: formData.PlaatsId,
-        DroneId: formData.DroneId,
-        ZoneId: formData.ZoneId,
-      }),
+      body: JSON.stringify(updateData),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.error("Update vluchtcyclus error details:", errorData);
       throw new Error(
-        errorData.error || `Failed to update vluchtcyclus (${response.status})`
+        errorData.error ||
+          `Kan vluchtcyclus niet bijwerken (${response.status})`
       );
     }
 
     setIsOpen(false);
     setFormData({} as VluchtCyclus);
 
-    alert("Flight cycle successfully updated!");
+    alert("Vluchtcyclus succesvol bijgewerkt!");
     window.location.reload();
   } catch (error) {
     console.error("Error updating vluchtcyclus:", error);
     setError(
-      error instanceof Error ? error.message : "Failed to update flight cycle"
+      error instanceof Error ? error.message : "Kon vluchtcyclus niet bijwerken"
     );
   } finally {
     setIsLoading(false);

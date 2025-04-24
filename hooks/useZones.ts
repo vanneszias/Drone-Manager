@@ -47,13 +47,30 @@ const handleDelete = async (id: number) => {
     });
 
     if (!res.ok) {
-      throw new Error("Failed to delete zone");
+      const errorData = await res.json();
+      console.error("Delete zone error details:", errorData);
+
+      if (
+        errorData.error?.toLowerCase().includes("references exist") ||
+        errorData.error?.toLowerCase().includes("in use")
+      ) {
+        alert(
+          "Deze zone kan niet worden verwijderd omdat deze nog in gebruik is (bijvoorbeeld door vluchtcycli)."
+        );
+        return;
+      }
+
+      throw new Error(errorData.error || "Failed to delete zone");
     }
 
     window.location.reload();
   } catch (error) {
     console.error("Error deleting zone:", error);
-    alert("Er is een fout opgetreden bij het verwijderen van de zone.");
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Er is een fout opgetreden bij het verwijderen van de zone."
+    );
   }
 };
 
@@ -193,5 +210,5 @@ export default {
   handleDelete,
   handleAddZone,
   handleUpdateZone,
-  fetchEvents
+  fetchEvents,
 };

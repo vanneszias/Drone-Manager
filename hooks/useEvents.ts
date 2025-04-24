@@ -74,11 +74,11 @@ const handleAddEvent = async (
         Accept: "application/json",
       },
       body: JSON.stringify({
-        naam: formData.Naam,
-        start_datum: formData.StartDatum,
-        eind_datum: formData.EindDatum,
-        start_tijd: formData.StartTijd,
-        tijdsduur: formData.Tijdsduur,
+        naam: formData.Naam?.trim(),
+        start_datum: formData.StartDatum?.trim(),
+        eind_datum: formData.EindDatum?.trim(),
+        start_tijd: formData.StartTijd?.trim(),
+        tijdsduur: formData.Tijdsduur?.trim(),
       }),
     });
 
@@ -126,19 +126,20 @@ const handleUpdateEvent = async (
         Accept: "application/json",
       },
       body: JSON.stringify({
-        naam: formData.Naam,
-        start_datum: formData.StartDatum,
-        eind_datum: formData.EindDatum,
-        start_tijd: formData.StartTijd,
-        tijdsduur: formData.Tijdsduur,
+        naam: formData.Naam?.trim(),
+        start_datum: formData.StartDatum?.trim(),
+        eind_datum: formData.EindDatum?.trim(),
+        start_tijd: formData.StartTijd?.trim(),
+        tijdsduur: formData.Tijdsduur?.trim(),
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(
-        errorData.error || `Failed to update event (${response.status})`
-      );
+      const errorMessage =
+        errorData.error || `Failed to update event (${response.status})`;
+      console.error("Update event error details:", errorData);
+      throw new Error(errorMessage);
     }
 
     setIsOpen(false);

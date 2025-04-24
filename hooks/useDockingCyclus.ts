@@ -1,6 +1,9 @@
-import { DockingCyclus } from "@/app/types";
+import { DockingCyclus, Drone, Docking, Cyclus } from "@/app/types";
 
 const apiUrl = "https://drone.ziasvannes.tech/api/docking-cycli";
+const dronesApiUrl = "https://drone.ziasvannes.tech/api/drones";
+const dockingsApiUrl = "https://drone.ziasvannes.tech/api/dockings";
+const cyclusApiUrl = "https://drone.ziasvannes.tech/api/cycli";
 
 async function getDockingCycli(): Promise<DockingCyclus[]> {
   try {
@@ -19,6 +22,69 @@ async function getDockingCycli(): Promise<DockingCyclus[]> {
     return data as DockingCyclus[];
   } catch (error) {
     console.error("Error in getDockingCycli:", error);
+    throw error;
+  }
+}
+
+async function getDrones(): Promise<Drone[]> {
+  try {
+    const res = await fetch(dronesApiUrl, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch drones. Status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data as Drone[];
+  } catch (error) {
+    console.error("Error in getDrones:", error);
+    throw error;
+  }
+}
+
+async function getDockings(): Promise<Docking[]> {
+  try {
+    const res = await fetch(dockingsApiUrl, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch dockings. Status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data as Docking[];
+  } catch (error) {
+    console.error("Error in getDockings:", error);
+    throw error;
+  }
+}
+
+async function getCycli(): Promise<Cyclus[]> {
+  try {
+    const res = await fetch(cyclusApiUrl, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch cycli. Status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data as Cyclus[];
+  } catch (error) {
+    console.error("Error in getCycli:", error);
     throw error;
   }
 }
@@ -154,4 +220,7 @@ export default {
   handleDelete,
   handleAddDockingCyclus,
   handleUpdateDockingCyclus,
+  getDrones,
+  getDockings,
+  getCycli,
 };
