@@ -1,6 +1,6 @@
 import { Docking } from "@/app/types";
 
-const apiUrl = "https://drone.ziasvannes.tech/api/dockings";
+const apiUrl = "https://drone.ziasvannes.tech/api/docking";
 
 async function getDockings(): Promise<Docking[]> {
   console.log(`Server-side fetch initiated for: ${apiUrl}`);

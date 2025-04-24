@@ -1,6 +1,6 @@
 import { DockingCyclus } from "@/app/types";
 
-const apiUrl = "https://drone.ziasvannes.tech/api/docking-cyclus";
+const apiUrl = "https://drone.ziasvannes.tech/api/docking-cycli";
 
 async function getDockingCycli(): Promise<DockingCyclus[]> {
   console.log(`Server-side fetch initiated for: ${apiUrl}`);
