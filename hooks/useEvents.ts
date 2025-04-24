@@ -74,11 +74,11 @@ const handleAddEvent = async (
         Accept: "application/json",
       },
       body: JSON.stringify({
-        Naam: formData.Naam,
-        StartDatum: formData.StartDatum,
-        EindDatum: formData.EindDatum,
-        StartTijd: formData.StartTijd,
-        Tijdsduur: formData.Tijdsduur,
+        naam: formData.Naam,
+        start_datum: formData.StartDatum,
+        eind_datum: formData.EindDatum,
+        start_tijd: formData.StartTijd,
+        tijdsduur: formData.Tijdsduur,
       }),
     });
 
@@ -126,11 +126,11 @@ const handleUpdateEvent = async (
         Accept: "application/json",
       },
       body: JSON.stringify({
-        Naam: formData.Naam,
-        StartDatum: formData.StartDatum,
-        EindDatum: formData.EindDatum,
-        StartTijd: formData.StartTijd,
-        Tijdsduur: formData.Tijdsduur,
+        naam: formData.Naam,
+        start_datum: formData.StartDatum,
+        eind_datum: formData.EindDatum,
+        start_tijd: formData.StartTijd,
+        tijdsduur: formData.Tijdsduur,
       }),
     });
 
@@ -150,7 +150,7 @@ const handleUpdateEvent = async (
       Tijdsduur: "",
     } as Event);
 
-    alert("Event successfully updated!");
+    alert("Event succesvol bijgewerkt!");
     window.location.reload();
   } catch (error) {
     console.error("Error updating event:", error);
