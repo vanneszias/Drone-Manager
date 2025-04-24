@@ -22,10 +22,9 @@ import { Label } from "@/components/ui/label";
 import { PlusCircle } from "lucide-react";
 
 import useVluchtCyclus from "@/hooks/useVluchtCyclus";
-import { VluchtCyclus } from "@/app/types";
+import { VluchtCyclus, Startplaats, Drone, Zone } from "@/app/types";
 
 type VluchtCyclusFormData = {
-  verslag_id: string;
   plaats_id: string;
   drone_id: string;
   zone_id: string;
@@ -36,16 +35,15 @@ export function AddVluchtCyclusDialog() {
     useVluchtCyclus;
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<VluchtCyclusFormData>({
-    verslag_id: "",
     plaats_id: "",
     drone_id: "",
     zone_id: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [places, setPlaces] = useState<any[]>([]);
-  const [drones, setDrones] = useState<any[]>([]);
-  const [zones, setZones] = useState<any[]>([]);
+  const [places, setPlaces] = useState<Startplaats[]>([]);
+  const [drones, setDrones] = useState<Drone[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -81,7 +79,6 @@ export function AddVluchtCyclusDialog() {
 
   const resetForm = () => {
     setFormData({
-      verslag_id: "",
       plaats_id: "",
       drone_id: "",
       zone_id: "",
@@ -94,7 +91,6 @@ export function AddVluchtCyclusDialog() {
     setError(null);
 
     const apiData = {
-      VerslagId: formData.verslag_id ? parseInt(formData.verslag_id) : null,
       PlaatsId: formData.plaats_id ? parseInt(formData.plaats_id) : null,
       DroneId: formData.drone_id ? parseInt(formData.drone_id) : null,
       ZoneId: formData.zone_id ? parseInt(formData.zone_id) : null,
@@ -147,7 +143,7 @@ export function AddVluchtCyclusDialog() {
                 <SelectContent>
                   {places.map((place) => (
                     <SelectItem key={place.Id} value={place.Id.toString()}>
-                      {place.Naam}
+                      {place.locatie}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -167,7 +163,7 @@ export function AddVluchtCyclusDialog() {
                 <SelectContent>
                   {drones.map((drone) => (
                     <SelectItem key={drone.Id} value={drone.Id.toString()}>
-                      {drone.Naam}
+                      {`Drone ${drone.Id} - ${drone.status}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -187,7 +183,7 @@ export function AddVluchtCyclusDialog() {
                 <SelectContent>
                   {zones.map((zone) => (
                     <SelectItem key={zone.Id} value={zone.Id.toString()}>
-                      {zone.Naam}
+                      {zone.naam}
                     </SelectItem>
                   ))}
                 </SelectContent>
