@@ -1,50 +1,61 @@
-import { DockingCyclus } from '@/app/types';
+import { DockingCyclus } from "@/app/types";
 
-const apiUrl = 'https://drone.ziasvannes.tech/api/docking-cycli';
+const apiUrl = "https://drone.ziasvannes.tech/api/docking-cyclus";
 
 async function getDockingCycli(): Promise<DockingCyclus[]> {
   console.log(`Server-side fetch initiated for: ${apiUrl}`);
 
   try {
     const res = await fetch(apiUrl, {
-      cache: 'no-store',
+      cache: "no-store",
       headers: {
-        'Accept': 'application/json',
-      }
+        Accept: "application/json",
+      },
     });
 
+    console.log(`Fetch response status from ${apiUrl}: ${res.status}`);
+
     if (!res.ok) {
-      throw new Error(`Failed to fetch docking cycli. Status: ${res.status}`);
+      const errorText = await res.text();
+      console.error(
+        `Error fetching ${apiUrl}: ${res.status} ${res.statusText}`
+      );
+      console.error(`Response body: ${errorText.substring(0, 500)}...`);
+      throw new Error(
+        `Failed to fetch docking cycli. Status: ${res.status}. Check server logs.`
+      );
     }
 
     const data = await res.json();
     return data as DockingCyclus[];
-
   } catch (error) {
     console.error(`Error in getDockingCycli:`, error);
     throw error;
   }
 }
 
-const handleDelete = async (Id: number) => {
-  if (!confirm(`Weet je zeker dat je deze docking cyclus wilt verwijderen?`)) return;
-  
+const handleDelete = async (id: number) => {
+  if (!confirm(`Weet je zeker dat je docking cyclus ${id} wilt verwijderen?`))
+    return;
+
   try {
-    const res = await fetch(`${apiUrl}/${Id}`, {
-      method: 'DELETE',
+    const res = await fetch(`${apiUrl}/${id}`, {
+      method: "DELETE",
       headers: {
-        'Accept': 'application/json',
-      }
+        Accept: "application/json",
+      },
     });
 
     if (!res.ok) {
-      throw new Error('Failed to delete docking cyclus');
+      throw new Error("Failed to delete docking cyclus");
     }
 
     window.location.reload();
   } catch (error) {
     console.error("Error deleting docking cyclus:", error);
-    alert("Er is een fout opgetreden bij het verwijderen.");
+    alert(
+      "Er is een fout opgetreden bij het verwijderen van de docking cyclus."
+    );
   }
 };
 
@@ -60,35 +71,39 @@ const handleAddDockingCyclus = async (
 
   try {
     const response = await fetch(apiUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        "Content-Type": "application/json",
+        Accept: "application/json",
       },
       body: JSON.stringify({
         DroneId: formData.DroneId,
         DockingId: formData.DockingId,
-        CyclusId: formData.CyclusId
-      })
+        CyclusId: formData.CyclusId,
+      }),
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to add docking cyclus (${response.status})`);
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || `Failed to add docking cyclus (${response.status})`
+      );
     }
 
     setIsOpen(false);
     setFormData({
-      Id: 0,
+      DroneId: 0,
       DockingId: 0,
       CyclusId: 0,
-      DroneId: 0
     } as DockingCyclus);
 
-    alert('Docking Cyclus succesvol toegevoegd!');
+    alert("Docking cyclus succesvol toegevoegd!");
     window.location.reload();
   } catch (error) {
-    console.error('Error adding docking cyclus:', error);
-    setError(error instanceof Error ? error.message : 'Failed to add docking cyclus');
+    console.error("Error adding docking cyclus:", error);
+    setError(
+      error instanceof Error ? error.message : "Failed to add docking cyclus"
+    );
   } finally {
     setIsLoading(false);
   }
@@ -97,5 +112,5 @@ const handleAddDockingCyclus = async (
 export default {
   getDockingCycli,
   handleDelete,
-  handleAddDockingCyclus
+  handleAddDockingCyclus,
 };

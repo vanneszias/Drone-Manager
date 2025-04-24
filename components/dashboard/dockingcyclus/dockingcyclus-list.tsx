@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { DockingCyclus } from '@/app/types';
+import React from "react";
+import { DockingCyclus } from "@/app/types";
 import {
   Table,
   TableHeader,
@@ -12,17 +12,21 @@ import {
   TableCell,
   TableCaption,
 } from "@/components/ui/table";
-import { Button } from '@/components/ui/button';
-import { Edit, Trash2 } from 'lucide-react';
-import useDockingCyclus from '@/hooks/useDockingCyclus';
+import { Button } from "@/components/ui/button";
+import { Edit, Trash2 } from "lucide-react";
+import useDockingCyclus from "@/hooks/useDockingCyclus";
 
 interface DockingCyclusListProps {
   dockingCycli: DockingCyclus[];
 }
 
-export default function DockingCyclusList({ dockingCycli }: DockingCyclusListProps) {
+export default function DockingCyclusList({
+  dockingCycli,
+}: DockingCyclusListProps) {
   if (!dockingCycli || dockingCycli.length === 0) {
-    return <p className="text-muted-foreground">Geen docking cycli gevonden.</p>;
+    return (
+      <p className="text-muted-foreground">Geen docking cycli gevonden.</p>
+    );
   }
 
   return (
@@ -49,9 +53,9 @@ export default function DockingCyclusList({ dockingCycli }: DockingCyclusListPro
                 <Edit className="h-4 w-4" />
                 <span className="sr-only">Bewerken</span>
               </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => useDockingCyclus.handleDelete(dockingCyclus.Id)}
               >
                 <Trash2 className="h-4 w-4 text-destructive" />

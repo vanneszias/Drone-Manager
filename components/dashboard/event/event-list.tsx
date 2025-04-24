@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { Event } from '@/app/types';
+import React from "react";
+import { Event } from "@/app/types";
 import {
   Table,
   TableHeader,
@@ -12,54 +12,56 @@ import {
   TableCell,
   TableCaption,
 } from "@/components/ui/table";
-import { Button } from '@/components/ui/button';
-import { Edit, Trash2 } from 'lucide-react';
-import useEvents from '@/hooks/useEvents';
+import { Button } from "@/components/ui/button";
+import { Edit, Trash2 } from "lucide-react";
+import useEvents from "@/hooks/useEvents";
 
 interface EventListProps {
   events: Event[];
 }
 
 export default function EventList({ events }: EventListProps) {
+  const { handleDelete } = useEvents;
 
   if (!events || events.length === 0) {
-    return <p className="text-muted-foreground">No events found.</p>;
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <div className="text-center">
+          <p className="text-muted-foreground">Geen evenementen gevonden.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Klik op 'Nieuw Evenement' om er een toe te voegen.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const formatDate = (dateString: string | undefined | null): string => {
-    if (!dateString) return 'N/A'; // Handle potential undefined/null
+    if (!dateString) return "N/A";
     try {
-      // Optional: Add more robust date parsing if needed
-      return new Date(dateString).toLocaleDateString();
+      return new Date(dateString).toLocaleDateString("nl-NL", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
     } catch (e) {
       console.warn("Invalid date string:", dateString);
-      return dateString; // Return original if invalid
+      return "N/A";
     }
   };
-
-  const formatTime = (timeString: string | undefined | null): string => {
-    if (!timeString) return 'N/A'; // Handle potential undefined/null
-    // Add check before substring
-    if (typeof timeString === 'string' && timeString.length >= 5) {
-      return timeString.substring(0, 5);
-    }
-    console.warn("Invalid or short time string:", timeString);
-    return timeString; // Return original if invalid or too short
-  };
-
 
   return (
     <Table>
-      <TableCaption>A list of your events.</TableCaption>
+      <TableCaption>Een lijst van alle evenementen.</TableCaption>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[80px]">ID</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>Start Date</TableHead>
-          <TableHead>Start Time</TableHead>
-          <TableHead>End Date</TableHead>
-          <TableHead>Duration</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="w-[100px]">ID</TableHead>
+          <TableHead>Naam</TableHead>
+          <TableHead>Start Datum</TableHead>
+          <TableHead>Eind Datum</TableHead>
+          <TableHead>Start Tijd</TableHead>
+          <TableHead>Tijdsduur</TableHead>
+          <TableHead className="text-right">Acties</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -68,17 +70,21 @@ export default function EventList({ events }: EventListProps) {
             <TableCell className="font-medium">{event.Id}</TableCell>
             <TableCell>{event.Naam}</TableCell>
             <TableCell>{formatDate(event.StartDatum)}</TableCell>
-            <TableCell>{formatTime(event.StartTijd)}</TableCell>
             <TableCell>{formatDate(event.EindDatum)}</TableCell>
+            <TableCell>{event.StartTijd}</TableCell>
             <TableCell>{event.Tijdsduur}</TableCell>
             <TableCell className="text-right">
               <Button variant="ghost" size="icon" className="mr-2" disabled>
                 <Edit className="h-4 w-4" />
-                <span className="sr-only">Edit</span>
+                <span className="sr-only">Bewerk evenement</span>
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => useEvents.handleDelete(event.Id)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(event.Id)}
+              >
                 <Trash2 className="h-4 w-4 text-destructive" />
-                <span className="sr-only">Delete</span>
+                <span className="sr-only">Verwijder evenement</span>
               </Button>
             </TableCell>
           </TableRow>
@@ -86,7 +92,7 @@ export default function EventList({ events }: EventListProps) {
       </TableBody>
       <TableFooter>
         <TableRow>
-          <TableCell colSpan={6}>Total Events</TableCell>
+          <TableCell colSpan={6}>Totaal Evenementen</TableCell>
           <TableCell className="text-right">{events.length}</TableCell>
         </TableRow>
       </TableFooter>

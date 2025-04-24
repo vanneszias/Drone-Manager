@@ -1,179 +1,113 @@
-import { Zone } from '@/app/types';
+import { Zone } from "@/app/types";
 
-const apiUrl = 'https://drone.ziasvannes.tech/api/zones';
-
-// Define the input type expected by the API (matching backend)
-interface ZoneApiInput {
-  naam: string;
-  breedte: number;
-  lengte: number;
-  evenement_id: number;
-}
-
-// Define the type for the reset function
-type ResetZoneForm = () => void;
-
-// Remove badge variant functions if Zone type doesn't have type/status anymore
-/*
-function getTypeBadgeVariant(type: Zone['type']) {
-  const variants = {
-    'RESTRICTED': 'bg-amber-100 text-amber-800 hover:bg-amber-200/80',
-    'NO_FLY': 'bg-red-100 text-red-800 hover:bg-red-200/80',
-    'LANDING': 'bg-blue-100 text-blue-800 hover:bg-blue-200/80',
-    'OPERATIONAL': 'bg-green-100 text-green-800 hover:bg-green-200/80',
-  };
-  return variants[type] || 'bg-gray-100 text-gray-800 hover:bg-gray-200/80';
-}
-
-function getStatusBadgeVariant(status: Zone['status']) {
-  const variants = {
-    'ACTIVE': 'bg-green-100 text-green-800 hover:bg-green-200/80',
-    'INACTIVE': 'bg-gray-100 text-gray-800 hover:bg-gray-200/80',
-    'MAINTENANCE': 'bg-amber-100 text-amber-800 hover:bg-amber-200/80',
-  };
-  return variants[status] || 'bg-gray-100 text-gray-800 hover:bg-gray-200/80';
-}
-*/
-
-// Actions
-async function handleAddZone(
-  zoneData: ZoneApiInput, // Expect the correct structure
-  setIsLoading: (loading: boolean) => void,
-  setError: (error: string | null) => void,
-  setIsOpen: (open: boolean) => void,
-  resetForm: ResetZoneForm // Use the specific reset function type
-) {
-  try {
-    setIsLoading(true);
-    setError(null);
-    console.log("Sending Zone Data to API:", zoneData); // Log data being sent
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(zoneData), // Send the correct data
-    });
-
-    if (!response.ok) {
-      let errorMsg = 'Failed to add zone';
-      try {
-        const errorData = await response.json();
-        console.error("API Error Response:", errorData);
-        errorMsg = errorData.error || `HTTP error! status: ${response.status}`;
-      } catch (jsonError) {
-        // If response is not JSON
-        errorMsg = `HTTP error! status: ${response.status}`;
-        console.error("Non-JSON API Error Response:", await response.text());
-      }
-      throw new Error(errorMsg);
-    }
-
-    // Success
-    resetForm(); // Call the reset function passed from the dialog
-    setIsOpen(false);
-    alert('Zone added successfully!');
-
-    // Optionally refresh the data
-    window.location.reload(); // Simple refresh
-  } catch (error: any) {
-    console.error("Error adding zone:", error);
-    setError(error.message || "An unknown error occurred while adding the zone.");
-  } finally {
-    setIsLoading(false);
-  }
-}
-
-async function handleDelete(id: string) { // ID is now number, but API expects string in URL
-  if (confirm('Are you sure you want to delete this zone?')) {
-    try {
-      const response = await fetch(`${apiUrl}/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        let errorMsg = `Failed to delete zone (${response.status})`;
-        try {
-          const errorData = await response.json();
-          errorMsg = errorData.error || errorMsg;
-        } catch (e) { /* Ignore if response not JSON */ }
-        throw new Error(errorMsg);
-      }
-      alert('Zone deleted successfully!');
-      // Refresh the page to show updated list
-      window.location.reload();
-    } catch (error: any) {
-      alert(error.message || 'Failed to delete zone');
-      console.error("Error deleting zone:", error);
-    }
-  }
-}
+const apiUrl = "https://drone.ziasvannes.tech/api/zones";
 
 async function getZones(): Promise<Zone[]> {
-  // Make sure this fetches from the correct URL (absolute or relative based on deployment)
-  console.log(`Fetching zones from: ${apiUrl}`);
-  try {
-    const response = await fetch(apiUrl, {
-      cache: 'no-store',
-      headers: { 'Accept': 'application/json' },
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch zones: ${response.status} - ${errorText.substring(0, 100)}`);
-    }
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const responseText = await response.text();
-      throw new Error(`API route ${apiUrl} did not return JSON. Received: ${contentType}. Body: ${responseText.substring(0, 100)}`);
-    }
-    const data = await response.json();
-    // Map API response (PascalCase EvenementId) to frontend type (PascalCase)
-    return data.map((item: any) => ({
-      Id: item.Id,
-      breedte: item.breedte,
-      lengte: item.lengte,
-      naam: item.naam,
-      EvenementId: item.EvenementId
-    })) as Zone[];
+  console.log(`Server-side fetch initiated for: ${apiUrl}`);
 
-  } catch (error) {
-    console.error('Error fetching zones:', error);
-    throw error; // Re-throw to be caught by page component
-  }
-}
-
-// Functie voor het ophalen van één specifieke zone
-async function getZoneById(id: string): Promise<Zone> { // ID is number, API expects string
   try {
-    const response = await fetch(`${apiUrl}/${id}`, {
-      cache: 'no-store',
+    const res = await fetch(apiUrl, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch zone: ${response.status}`);
+    console.log(`Fetch response status from ${apiUrl}: ${res.status}`);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(
+        `Error fetching ${apiUrl}: ${res.status} ${res.statusText}`
+      );
+      console.error(`Response body: ${errorText.substring(0, 500)}...`);
+      throw new Error(
+        `Failed to fetch zones. Status: ${res.status}. Check server logs.`
+      );
     }
 
-    const item = await response.json();
-    // Map API response (PascalCase EvenementId) to frontend type (PascalCase)
-    return {
-      Id: item.Id,
-      breedte: item.breedte,
-      lengte: item.lengte,
-      naam: item.naam,
-      EvenementId: item.EvenementId
-    } as Zone;
-
+    const data = await res.json();
+    return data as Zone[];
   } catch (error) {
-    console.error(`Error fetching zone with ID ${id}:`, error);
+    console.error(`Error in getZones:`, error);
     throw error;
   }
 }
 
+const handleDelete = async (id: number) => {
+  if (!confirm(`Weet je zeker dat je zone ${id} wilt verwijderen?`)) return;
+
+  try {
+    const res = await fetch(`${apiUrl}/${id}`, {
+      method: "DELETE",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to delete zone");
+    }
+
+    window.location.reload();
+  } catch (error) {
+    console.error("Error deleting zone:", error);
+    alert("Er is een fout opgetreden bij het verwijderen van de zone.");
+  }
+};
+
+const handleAddZone = async (
+  formData: Zone,
+  setIsLoading: (isLoading: boolean) => void,
+  setError: (error: string | null) => void,
+  setIsOpen: (isOpen: boolean) => void,
+  setFormData: (formData: Zone) => void
+) => {
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        breedte: formData.breedte,
+        lengte: formData.lengte,
+        naam: formData.naam,
+        EvenementId: formData.EvenementId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || `Failed to add zone (${response.status})`
+      );
+    }
+
+    setIsOpen(false);
+    setFormData({
+      breedte: 0,
+      lengte: 0,
+      naam: "",
+      EvenementId: 0,
+    } as Zone);
+
+    alert("Zone succesvol toegevoegd!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error adding zone:", error);
+    setError(error instanceof Error ? error.message : "Failed to add zone");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 export default {
   getZones,
-  getZoneById,
-  handleAddZone,
   handleDelete,
-  // Remove badge variants if not needed
-  // getTypeBadgeVariant,
-  // getStatusBadgeVariant,
+  handleAddZone,
 };

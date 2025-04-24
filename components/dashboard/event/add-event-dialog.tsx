@@ -1,7 +1,9 @@
 "use client";
-{ /* TODO: Use shadcn/ui components for the time inputs */ }
+{
+  /* TODO: Use shadcn/ui components for the time inputs */
+}
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,14 +16,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle } from 'lucide-react';
-import useEvents from '@/hooks/useEvents'; // Hook for API calls
+import { PlusCircle } from "lucide-react";
+import useEvents from "@/hooks/useEvents"; // Hook for API calls
 
 interface EventFormData {
   naam: string;
   start_datum: string; // YYYY-MM-DD
-  eind_datum: string;  // YYYY-MM-DD
-  start_tijd: string;  // HH:MM[:SS]
+  eind_datum: string; // YYYY-MM-DD
+  start_tijd: string; // HH:MM[:SS]
   tijdsduur: string; // HH:MM[:SS]
 }
 
@@ -36,16 +38,16 @@ export function AddEventDialog() {
 
   // Initialize state with the correct snake_case structure
   const [formData, setFormData] = useState<EventFormData>({
-    naam: '',
-    start_datum: '',
-    eind_datum: '',
-    start_tijd: '', // Initialize time strings, ensure format is handled on submit
-    tijdsduur: ''    // Initialize time strings, ensure format is handled on submit
+    naam: "",
+    start_datum: "",
+    eind_datum: "",
+    start_tijd: "", // Initialize time strings, ensure format is handled on submit
+    tijdsduur: "", // Initialize time strings, ensure format is handled on submit
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [id]: value, // Value from date/time inputs is already string
     }));
@@ -58,19 +60,30 @@ export function AddEventDialog() {
 
     // The formData already matches the snake_case structure the API expects (EventApiInput)
     // No casting needed here, just pass the formData directly.
-    const eventApiInputData: EventApiInput = {
-      ...formData
+    const eventApiInputData = {
+      Id: 0, // temporary ID that will be set by the backend
+      Naam: formData.naam,
+      StartDatum: formData.start_datum,
+      EindDatum: formData.eind_datum,
+      StartTijd: formData.start_tijd,
+      Tijdsduur: formData.tijdsduur,
     };
 
-    // Pass the correctly structured snake_case data to the hook.
-    // The hook's handleAddEvent should expect this snake_case structure.
+    // Pass the correctly structured PascalCase data to the hook
     useEvents.handleAddEvent(
       eventApiInputData,
       setIsSubmitting,
       setError,
       setIsOpen,
-      // The reset callback expects the same structure (EventFormData/EventApiInput)
-      (resetData) => setFormData(resetData as EventFormData)
+      // Map the resetData to match EventFormData structure
+      (resetData) =>
+        setFormData({
+          naam: "",
+          start_datum: "",
+          eind_datum: "",
+          start_tijd: "",
+          tijdsduur: "",
+        })
     );
   };
 
@@ -94,40 +107,92 @@ export function AddEventDialog() {
             {/* Name */}
             <div className="grid grid-cols-4 items-center gap-4">
               {/* Use snake_case for htmlFor to match input id */}
-              <Label htmlFor="naam" className="text-right">Name</Label>
-              <Input id="naam" value={formData.naam} onChange={handleInputChange} className="col-span-3" required />
+              <Label htmlFor="naam" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="naam"
+                value={formData.naam}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+              />
             </div>
 
             {/* Start Date */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="start_datum" className="text-right">Start Date</Label>
-              <Input id="start_datum" type="date" value={formData.start_datum} onChange={handleInputChange} className="col-span-3" required />
+              <Label htmlFor="start_datum" className="text-right">
+                Start Date
+              </Label>
+              <Input
+                id="start_datum"
+                type="date"
+                value={formData.start_datum}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+              />
             </div>
 
             {/* Start Time */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="start_tijd" className="text-right">Start Time</Label>
+              <Label htmlFor="start_tijd" className="text-right">
+                Start Time
+              </Label>
               {/* Add step="1" if seconds precision is needed by the backend */}
-              <Input id="start_tijd" type="time" value={formData.start_tijd} onChange={handleInputChange} className="col-span-3" required step="1" />
+              <Input
+                id="start_tijd"
+                type="time"
+                value={formData.start_tijd}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+                step="1"
+              />
             </div>
 
             {/* End Date */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="eind_datum" className="text-right">End Date</Label>
-              <Input id="eind_datum" type="date" value={formData.eind_datum} onChange={handleInputChange} className="col-span-3" required />
+              <Label htmlFor="eind_datum" className="text-right">
+                End Date
+              </Label>
+              <Input
+                id="eind_datum"
+                type="date"
+                value={formData.eind_datum}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+              />
             </div>
 
             {/* Duration */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tijdsduur" className="text-right">Duration</Label>
+              <Label htmlFor="tijdsduur" className="text-right">
+                Duration
+              </Label>
               {/* Add step="1" if seconds precision is needed by the backend */}
-              <Input id="tijdsduur" type="time" value={formData.tijdsduur} onChange={handleInputChange} className="col-span-3" required step="1" />
+              <Input
+                id="tijdsduur"
+                type="time"
+                value={formData.tijdsduur}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+                step="1"
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save Event'}
+              {isSubmitting ? "Saving..." : "Save Event"}
             </Button>
           </DialogFooter>
         </form>
