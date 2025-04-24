@@ -6,7 +6,7 @@ export default function Testimonials() {
     return (
         <section id="testimonials" className="relative w-full py-12 md:py-24 lg:py-32 bg-black">
             {/* Gradient achtergrond - omgekeerde volgorde */}
-            <div className="absolute inset-0 bg-gradient-to-b from-green-500 via-blue-700 to-sky-300" />
+            <div className="absolute inset-0 bg-gradient-to-b from-sky-300 via-blue-700 to-green-500" />
 
             <div className="container relative z-10 px-4 md:px-6 mx-auto max-w-7xl">
                 <div className="flex flex-col items-center justify-center space-y-4 text-center">
