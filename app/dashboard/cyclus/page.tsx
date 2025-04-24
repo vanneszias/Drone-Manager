@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { Cyclus } from "@/app/types";
 import CyclusList from "@/components/dashboard/cyclus/cyclus-list";
 import { AddCyclusDialog } from "@/components/dashboard/cyclus/add-cyclus-dialog";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import useCyclus from "@/hooks/useCyclus";
 import { Button } from "@/components/ui/button";
 
@@ -22,8 +28,12 @@ export default function CyclusPage() {
         const data = await getCycli();
         setCycli(data);
       } catch (err) {
-        console.error('Error in loadCycli:', err);
-        setError(err instanceof Error ? err.message : 'Er is een fout opgetreden bij het laden van de cycli');
+        console.error("Error in loadCycli:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Er is een fout opgetreden bij het laden van de cycli"
+        );
       } finally {
         setLoading(false);
       }
@@ -47,10 +57,12 @@ export default function CyclusPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-destructive font-semibold">Error bij het laden van cycli</p>
+          <p className="text-destructive font-semibold">
+            Error bij het laden van cycli
+          </p>
           <p className="text-sm text-muted-foreground mt-2">{error}</p>
-          <Button 
-            onClick={() => window.location.reload()} 
+          <Button
+            onClick={() => window.location.reload()}
             className="mt-4"
             variant="outline"
           >

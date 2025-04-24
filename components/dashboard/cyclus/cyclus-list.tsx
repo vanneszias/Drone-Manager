@@ -29,9 +29,8 @@ interface CyclusListProps {
 }
 
 export default function CyclusList({ cycli }: CyclusListProps) {
-  const { handleDelete } = useCyclus;
-  const { getVluchtCycli, getDrones, getZones, getPlaces, getVerslagen } =
-    useVluchtCyclus;
+  const cyclusHook = useCyclus;
+  const vluchtCyclusHook = useVluchtCyclus;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedCyclus, setSelectedCyclus] = useState<Cyclus | null>(null);
   const [vluchtCycli, setVluchtCycli] = useState<VluchtCyclus[]>([]);
@@ -50,11 +49,11 @@ export default function CyclusList({ cycli }: CyclusListProps) {
       try {
         const [vluchtData, droneData, zoneData, plaatsData, verslagData] =
           await Promise.all([
-            getVluchtCycli(),
-            getDrones(),
-            getZones(),
-            getPlaces(),
-            getVerslagen(),
+            vluchtCyclusHook.getVluchtCycli(),
+            vluchtCyclusHook.getDrones(),
+            vluchtCyclusHook.getZones(),
+            vluchtCyclusHook.getPlaces(),
+            vluchtCyclusHook.getVerslagen(),
           ]);
         setVluchtCycli(vluchtData);
         setDrones(droneData);
@@ -66,7 +65,7 @@ export default function CyclusList({ cycli }: CyclusListProps) {
       }
     };
     loadData();
-  }, [cycli]);
+  }, [cycli, vluchtCyclusHook]);
 
   const getVluchtCyclusDetails = (id: number | null | undefined) => {
     if (!id) return "Geen vluchtcyclus";
@@ -155,7 +154,7 @@ export default function CyclusList({ cycli }: CyclusListProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleDelete(cyclus.Id)}
+                  onClick={() => cyclusHook.handleDelete(cyclus.Id)}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                   <span className="sr-only">Verwijder cyclus</span>
