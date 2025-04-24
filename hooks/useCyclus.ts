@@ -124,7 +124,7 @@ const handleUpdateCyclus = async (
       body: JSON.stringify({
         startuur: formData.startuur,
         tijdstip: formData.tijdstip,
-        VluchtCyclusId: formData.VluchtCyclusId,
+        vluchtcyclusId: formData.VluchtCyclusId,
       }),
     });
 
@@ -137,12 +137,13 @@ const handleUpdateCyclus = async (
 
     setIsOpen(false);
     setFormData({
+      Id: 0,
       startuur: "",
       tijdstip: "",
-      VluchtCyclusId: null,
+      vluchtcyclusId: null,
     } as Cyclus);
 
-    alert("Cyclus succesvol bijgewerkt!");
+    alert("Cyclus successfully updated!");
     window.location.reload();
   } catch (error) {
     console.error("Error updating cyclus:", error);

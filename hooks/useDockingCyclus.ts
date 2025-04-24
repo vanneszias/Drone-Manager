@@ -119,7 +119,7 @@ const handleUpdateCyclus = async (
   setIsLoading(true);
   setError(null);
   try {
-    const response = await fetch(`${apiUrl}/${formData.id}`, {
+    const response = await fetch(`${apiUrl}/${formData.Id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -159,9 +159,61 @@ const handleUpdateCyclus = async (
   }
 };
 
+const handleUpdateDockingCyclus = async (
+  formData: DockingCyclus,
+  setIsLoading: (isLoading: boolean) => void,
+  setError: (error: string | null) => void,
+  setIsOpen: (isOpen: boolean) => void,
+  setFormData: (formData: DockingCyclus) => void
+) => {
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const response = await fetch(`${apiUrl}/${formData.Id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        docking_id: formData.DockingId,
+        drone_id: formData.DroneId,
+        cyclus_id: formData.CyclusId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error ||
+          `Failed to update docking cyclus (${response.status})`
+      );
+    }
+
+    setIsOpen(false);
+    setFormData({
+      DockingId: 0,
+      DroneId: 0,
+      CyclusId: 0,
+    } as DockingCyclus);
+
+    alert("Docking cycle successfully updated!");
+    window.location.reload();
+  } catch (error) {
+    console.error("Error updating docking cyclus:", error);
+    setError(
+      error instanceof Error ? error.message : "Failed to update docking cycle"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 export default {
   getDockingCycli,
   handleDelete,
   handleAddDockingCyclus,
   handleUpdateCyclus,
+  handleUpdateDockingCyclus,
 };

@@ -124,9 +124,9 @@ const handleUpdateZone = async (
         Accept: "application/json",
       },
       body: JSON.stringify({
+        naam: formData.naam,
         breedte: formData.breedte,
         lengte: formData.lengte,
-        naam: formData.naam,
         EvenementId: formData.EvenementId,
       }),
     });
@@ -140,13 +140,13 @@ const handleUpdateZone = async (
 
     setIsOpen(false);
     setFormData({
+      naam: "",
       breedte: 0,
       lengte: 0,
-      naam: "",
       EvenementId: 0,
     } as Zone);
 
-    alert("Zone succesvol bijgewerkt!");
+    alert("Zone successfully updated!");
     window.location.reload();
   } catch (error) {
     console.error("Error updating zone:", error);

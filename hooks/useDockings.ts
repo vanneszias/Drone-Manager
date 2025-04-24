@@ -113,7 +113,7 @@ const handleUpdateDocking = async (
   setError(null);
 
   try {
-    const response = await fetch(`${apiUrl}/${formData.id}`, {
+    const response = await fetch(`${apiUrl}/${formData.Id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -138,7 +138,7 @@ const handleUpdateDocking = async (
       isbeschikbaar: true,
     } as Docking);
 
-    alert("Docking succesvol bijgewerkt!");
+    alert("Docking successfully updated!");
     window.location.reload();
   } catch (error) {
     console.error("Error updating docking:", error);

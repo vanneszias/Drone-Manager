@@ -128,30 +128,36 @@ const handleUpdateVluchtCyclus = async (
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify({
+        VerslagId: formData.VerslagId,
+        PlaatsId: formData.PlaatsId,
+        DroneId: formData.DroneId,
+        ZoneId: formData.ZoneId,
+      }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
-        errorData.error || `Failed to update vlucht cyclus (${response.status})`
+        errorData.error || `Failed to update vluchtcyclus (${response.status})`
       );
     }
 
     setIsOpen(false);
     setFormData({
+      Id: 0,
       VerslagId: null,
       PlaatsId: null,
       DroneId: null,
       ZoneId: null,
     } as VluchtCyclus);
 
-    alert("Vlucht cyclus succesvol bijgewerkt!");
+    alert("Flight cycle successfully updated!");
     window.location.reload();
   } catch (error) {
-    console.error("Error updating vlucht cyclus:", error);
+    console.error("Error updating vluchtcyclus:", error);
     setError(
-      error instanceof Error ? error.message : "Failed to update vlucht cyclus"
+      error instanceof Error ? error.message : "Failed to update flight cycle"
     );
   } finally {
     setIsLoading(false);

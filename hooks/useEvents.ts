@@ -150,7 +150,7 @@ const handleUpdateEvent = async (
       Tijdsduur: "",
     } as Event);
 
-    alert("Event succesvol bijgewerkt!");
+    alert("Event successfully updated!");
     window.location.reload();
   } catch (error) {
     console.error("Error updating event:", error);

@@ -125,7 +125,13 @@ const handleUpdateVerslag = async (
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify({
+        onderwerp: formData.onderwerp,
+        inhoud: formData.inhoud,
+        isverzonden: formData.isverzonden,
+        isgeaccepteerd: formData.isgeaccepteerd,
+        VluchtCyclusId: formData.VluchtCyclusId,
+      }),
     });
 
     if (!response.ok) {
@@ -136,7 +142,16 @@ const handleUpdateVerslag = async (
     }
 
     setIsOpen(false);
-    alert("Verslag succesvol bijgewerkt!");
+    setFormData({
+      Id: 0,
+      onderwerp: "",
+      inhoud: "",
+      isverzonden: false,
+      isgeaccepteerd: false,
+      VluchtCyclusId: null,
+    } as Verslag);
+
+    alert("Verslag successfully updated!");
     window.location.reload();
   } catch (error) {
     console.error("Error updating verslag:", error);
