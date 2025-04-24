@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,47 +11,71 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { PlusCircle } from "lucide-react";
 
 import useVluchtCyclus from "@/hooks/useVluchtCyclus";
-import { VluchtCyclus } from "@/app/types"; // Import base type if needed
+import { VluchtCyclus } from "@/app/types";
 
-// Use snake_case keys for form state to match API expectation eventually
 type VluchtCyclusFormData = {
-  verslag_id: number | string | undefined; // Use string for input, convert later
-  plaats_id: number | string | undefined;
-  drone_id: number | string | undefined;
-  zone_id: number | string | undefined;
-};
-
-// Type for data sent to API
-type VluchtCyclusApiInput = {
-  verslag_id?: number | null;
-  plaats_id?: number | null;
-  drone_id?: number | null;
-  zone_id?: number | null;
+  verslag_id: string;
+  plaats_id: string;
+  drone_id: string;
+  zone_id: string;
 };
 
 export function AddVluchtCyclusDialog() {
-  const { handleAddVluchtCyclus } = useVluchtCyclus;
+  const { handleAddVluchtCyclus, getPlaces, getDrones, getZones } =
+    useVluchtCyclus;
   const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState<Partial<VluchtCyclusFormData>>({
-    // Use Partial for initial state
-    verslag_id: "", // Initialize as empty string for inputs
+  const [formData, setFormData] = useState<VluchtCyclusFormData>({
+    verslag_id: "",
     plaats_id: "",
     drone_id: "",
     zone_id: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [places, setPlaces] = useState<any[]>([]);
+  const [drones, setDrones] = useState<any[]>([]);
+  const [zones, setZones] = useState<any[]>([]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [placesData, dronesData, zonesData] = await Promise.all([
+          getPlaces(),
+          getDrones(),
+          getZones(),
+        ]);
+        setPlaces(placesData);
+        setDrones(dronesData);
+        setZones(zonesData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("Failed to load options");
+      }
+    };
+
+    if (isOpen) {
+      fetchData();
+    }
+  }, [isOpen]);
+
+  const handleSelectChange = (
+    value: string,
+    field: keyof VluchtCyclusFormData
+  ) => {
     setFormData((prev) => ({
       ...prev,
-      [id]: value, // Keep as string for input handling
+      [field]: value,
     }));
   };
 
@@ -69,55 +93,24 @@ export function AddVluchtCyclusDialog() {
     e.preventDefault();
     setError(null);
 
-    // Convert string inputs to numbers or null for API
-    const apiData: VluchtCyclusApiInput = {
-      verslag_id: formData.verslag_id
-        ? parseInt(formData.verslag_id.toString(), 10) || null
-        : null,
-      plaats_id: formData.plaats_id
-        ? parseInt(formData.plaats_id.toString(), 10) || null
-        : null,
-      drone_id: formData.drone_id
-        ? parseInt(formData.drone_id.toString(), 10) || null
-        : null,
-      zone_id: formData.zone_id
-        ? parseInt(formData.zone_id.toString(), 10) || null
-        : null,
+    const apiData = {
+      VerslagId: formData.verslag_id ? parseInt(formData.verslag_id) : null,
+      PlaatsId: formData.plaats_id ? parseInt(formData.plaats_id) : null,
+      DroneId: formData.drone_id ? parseInt(formData.drone_id) : null,
+      ZoneId: formData.zone_id ? parseInt(formData.zone_id) : null,
     };
 
-    // Simple validation: ensure IDs are valid numbers if provided
-    for (const key in apiData) {
-      const value = apiData[key as keyof typeof apiData];
-      if (value !== null && isNaN(value!)) {
-        setError(`Invalid number provided for ${key.replace("_id", " ID")}.`);
-        return;
-      }
-      if (value !== null && value! <= 0) {
-        // IDs should be positive
-        setError(`${key.replace("_id", " ID")} must be a positive number.`);
-        return;
-      }
-    }
-
-    // At least one ID should be provided for a meaningful record
-    if (
-      !apiData.verslag_id ||
-      !apiData.plaats_id ||
-      !apiData.drone_id ||
-      !apiData.zone_id
-    ) {
-      setError(
-        "Please provide at least one ID (Verslag, Plaats, Drone, or Zone)."
-      );
+    if (!apiData.PlaatsId && !apiData.DroneId && !apiData.ZoneId) {
+      setError("Please select at least one option (Place, Drone, or Zone)");
       return;
     }
 
     handleAddVluchtCyclus(
-      apiData as VluchtCyclus, // Send the processed data
+      apiData as VluchtCyclus,
       setIsLoading,
       setError,
       setIsOpen,
-      resetForm // Pass the reset function
+      resetForm
     );
   };
 
@@ -132,67 +125,73 @@ export function AddVluchtCyclusDialog() {
         <DialogHeader>
           <DialogTitle>Nieuwe Vluchtcyclus Toevoegen</DialogTitle>
           <DialogDescription>
-            Vul de details in voor de nieuwe vluchtcyclus. Minstens één ID is
+            Vul de details in voor de nieuwe vluchtcyclus. Minstens één optie is
             vereist.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="verslag_id" className="text-right">
-                Verslag ID
+              <Label htmlFor="plaats_select" className="text-right">
+                Plaats
               </Label>
-              <Input
-                id="verslag_id" // Use snake_case ID
-                type="number"
-                min="1" // IDs usually start from 1
-                value={formData.verslag_id ?? ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="Optional"
-              />
+              <Select
+                value={formData.plaats_id}
+                onValueChange={(value) =>
+                  handleSelectChange(value, "plaats_id")
+                }
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een plaats" />
+                </SelectTrigger>
+                <SelectContent>
+                  {places.map((place) => (
+                    <SelectItem key={place.Id} value={place.Id.toString()}>
+                      {place.Naam}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="plaats_id" className="text-right">
-                Plaats ID
+              <Label htmlFor="drone_select" className="text-right">
+                Drone
               </Label>
-              <Input
-                id="plaats_id"
-                type="number"
-                min="1"
-                value={formData.plaats_id ?? ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="Optional"
-              />
+              <Select
+                value={formData.drone_id}
+                onValueChange={(value) => handleSelectChange(value, "drone_id")}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een drone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {drones.map((drone) => (
+                    <SelectItem key={drone.Id} value={drone.Id.toString()}>
+                      {drone.Naam}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="drone_id" className="text-right">
-                Drone ID
+              <Label htmlFor="zone_select" className="text-right">
+                Zone
               </Label>
-              <Input
-                id="drone_id"
-                type="number"
-                min="1"
-                value={formData.drone_id ?? ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="Optional"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="zone_id" className="text-right">
-                Zone ID
-              </Label>
-              <Input
-                id="zone_id"
-                type="number"
-                min="1" // Changed min to 1
-                value={formData.zone_id ?? ""} // Handle null/undefined for input value
-                onChange={handleInputChange} // Keep existing onChange
-                className="col-span-3"
-                placeholder="Optional"
-              />
+              <Select
+                value={formData.zone_id}
+                onValueChange={(value) => handleSelectChange(value, "zone_id")}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een zone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {zones.map((zone) => (
+                    <SelectItem key={zone.Id} value={zone.Id.toString()}>
+                      {zone.Naam}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}

@@ -1,6 +1,9 @@
 import { VluchtCyclus } from "@/app/types";
 
 const apiUrl = "https://drone.ziasvannes.tech/api/vlucht-cycli";
+const plaatsApiUrl = "https://drone.ziasvannes.tech/api/startplaatsen";
+const droneApiUrl = "https://drone.ziasvannes.tech/api/drones";
+const zoneApiUrl = "https://drone.ziasvannes.tech/api/zones";
 
 async function getVluchtCycli(): Promise<VluchtCyclus[]> {
   console.log(`Server-side fetch initiated for: ${apiUrl}`);
@@ -30,6 +33,69 @@ async function getVluchtCycli(): Promise<VluchtCyclus[]> {
     return data as VluchtCyclus[];
   } catch (error) {
     console.error(`Error in getVluchtCycli:`, error);
+    throw error;
+  }
+}
+
+async function getPlaces() {
+  try {
+    const res = await fetch(plaatsApiUrl, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch places. Status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching places:", error);
+    throw error;
+  }
+}
+
+async function getDrones() {
+  try {
+    const res = await fetch(droneApiUrl, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch drones. Status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching drones:", error);
+    throw error;
+  }
+}
+
+async function getZones() {
+  try {
+    const res = await fetch(zoneApiUrl, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch zones. Status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching zones:", error);
     throw error;
   }
 }
@@ -163,4 +229,7 @@ export default {
   handleDelete,
   handleAddVluchtCyclus,
   handleUpdateVluchtCyclus,
+  getPlaces,
+  getDrones,
+  getZones,
 };

@@ -10,7 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { VluchtCyclus } from "@/app/types";
 import useVluchtCyclus from "@/hooks/useVluchtCyclus";
@@ -26,19 +32,45 @@ export function EditVluchtCyclusDialog({
   isOpen,
   setIsOpen,
 }: EditVluchtCyclusDialogProps) {
+  const { handleUpdateVluchtCyclus, getPlaces, getDrones, getZones } =
+    useVluchtCyclus;
   const [formData, setFormData] = useState<VluchtCyclus>(vluchtCyclus);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [places, setPlaces] = useState<any[]>([]);
+  const [drones, setDrones] = useState<any[]>([]);
+  const [zones, setZones] = useState<any[]>([]);
 
   useEffect(() => {
     setFormData(vluchtCyclus);
   }, [vluchtCyclus]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [placesData, dronesData, zonesData] = await Promise.all([
+          getPlaces(),
+          getDrones(),
+          getZones(),
+        ]);
+        setPlaces(placesData);
+        setDrones(dronesData);
+        setZones(zonesData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("Failed to load options");
+      }
+    };
+
+    if (isOpen) {
+      fetchData();
+    }
+  }, [isOpen]);
+
+  const handleSelectChange = (value: string, field: keyof VluchtCyclus) => {
     setFormData((prev) => ({
       ...prev,
-      [id]: value ? Number(value) : null,
+      [field]: value ? parseInt(value) : null,
     }));
   };
 
@@ -46,18 +78,12 @@ export function EditVluchtCyclusDialog({
     e.preventDefault();
     setError(null);
 
-    // At least one ID is required
-    if (
-      !formData.VerslagId ||
-      !formData.PlaatsId ||
-      !formData.DroneId ||
-      !formData.ZoneId
-    ) {
-      setError("At least one ID (Report, Place, Drone, or Zone) is required");
+    if (!formData.PlaatsId && !formData.DroneId && !formData.ZoneId) {
+      setError("At least one ID (Place, Drone, or Zone) is required");
       return;
     }
 
-    useVluchtCyclus.handleUpdateVluchtCyclus(
+    handleUpdateVluchtCyclus(
       formData,
       setIsLoading,
       setError,
@@ -70,68 +96,73 @@ export function EditVluchtCyclusDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit Flight Cycle</DialogTitle>
+          <DialogTitle>Bewerk Vluchtcyclus</DialogTitle>
           <DialogDescription>
-            Make changes to the flight cycle. At least one ID is required.
+            Pas de details van de vluchtcyclus aan. Minstens één optie is
+            vereist.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="verslag_id" className="text-right">
-                Report ID
+              <Label htmlFor="plaats_select" className="text-right">
+                Plaats
               </Label>
-              <Input
-                id="verslag_id"
-                type="number"
-                min="1"
-                value={formData.VerslagId || ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="Optional"
-              />
+              <Select
+                value={formData.PlaatsId?.toString() || ""}
+                onValueChange={(value) => handleSelectChange(value, "PlaatsId")}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een plaats" />
+                </SelectTrigger>
+                <SelectContent>
+                  {places.map((place) => (
+                    <SelectItem key={place.Id} value={place.Id.toString()}>
+                      {place.Naam}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="plaats_id" className="text-right">
-                Place ID
+              <Label htmlFor="drone_select" className="text-right">
+                Drone
               </Label>
-              <Input
-                id="plaats_id"
-                type="number"
-                min="1"
-                value={formData.PlaatsId || ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="Optional"
-              />
+              <Select
+                value={formData.DroneId?.toString() || ""}
+                onValueChange={(value) => handleSelectChange(value, "DroneId")}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een drone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {drones.map((drone) => (
+                    <SelectItem key={drone.Id} value={drone.Id.toString()}>
+                      {drone.Naam}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="drone_id" className="text-right">
-                Drone ID
+              <Label htmlFor="zone_select" className="text-right">
+                Zone
               </Label>
-              <Input
-                id="drone_id"
-                type="number"
-                min="1"
-                value={formData.DroneId || ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="Optional"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="zone_id" className="text-right">
-                Zone ID
-              </Label>
-              <Input
-                id="zone_id"
-                type="number"
-                min="1"
-                value={formData.ZoneId || ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="Optional"
-              />
+              <Select
+                value={formData.ZoneId?.toString() || ""}
+                onValueChange={(value) => handleSelectChange(value, "ZoneId")}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een zone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {zones.map((zone) => (
+                    <SelectItem key={zone.Id} value={zone.Id.toString()}>
+                      {zone.Naam}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
@@ -141,10 +172,10 @@ export function EditVluchtCyclusDialog({
               variant="outline"
               onClick={() => setIsOpen(false)}
             >
-              Cancel
+              Annuleren
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save Changes"}
+              {isLoading ? "Opslaan..." : "Wijzigingen Opslaan"}
             </Button>
           </DialogFooter>
         </form>
