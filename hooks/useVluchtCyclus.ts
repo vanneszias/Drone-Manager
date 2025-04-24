@@ -4,6 +4,7 @@ const apiUrl = "https://drone.ziasvannes.tech/api/vlucht-cycli";
 const plaatsApiUrl = "https://drone.ziasvannes.tech/api/startplaatsen";
 const droneApiUrl = "https://drone.ziasvannes.tech/api/drones";
 const zoneApiUrl = "https://drone.ziasvannes.tech/api/zones";
+const verslagApiUrl = "https://drone.ziasvannes.tech/api/verslagen";
 
 async function getVluchtCycli(): Promise<VluchtCyclus[]> {
   console.log(`Server-side fetch initiated for: ${apiUrl}`);
@@ -96,6 +97,27 @@ async function getZones() {
     return data;
   } catch (error) {
     console.error("Error fetching zones:", error);
+    throw error;
+  }
+}
+
+async function getVerslagen() {
+  try {
+    const res = await fetch(verslagApiUrl, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch verslagen. Status: ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching verslagen:", error);
     throw error;
   }
 }
@@ -232,4 +254,5 @@ export default {
   getPlaces,
   getDrones,
   getZones,
+  getVerslagen,
 };
