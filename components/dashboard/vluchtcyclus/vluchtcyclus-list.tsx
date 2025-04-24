@@ -48,22 +48,25 @@ export default function VluchtCyclusList({ vluchtCycli }: VluchtCyclusListProps)
 
     return (
         <Table>
+            <TableCaption>A list of Vlucht Cycli.</TableCaption>
             <TableHeader>
                 <TableRow>
-                    <TableHead>Verslag ID</TableHead>
-                    <TableHead>Plaats ID</TableHead>
-                    <TableHead>Drone ID</TableHead>
-                    <TableHead>Zone ID</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="w-[100px]">ID</TableHead>
+                    <TableHead>Verslag ID</TableHead> {/* Nullable */}
+                    <TableHead>Plaats ID</TableHead> {/* Nullable */}
+                    <TableHead>Drone ID</TableHead> {/* Nullable */}
+                    <TableHead>Zone ID</TableHead> {/* Nullable */}
+                    <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {vluchtCycli.map((vluchtCyclus) => (
                     <TableRow key={vluchtCyclus.Id}>
-                        <TableCell>{vluchtCyclus.VerslagId}</TableCell>
-                        <TableCell>{vluchtCyclus.PlaatsId}</TableCell>
-                        <TableCell>{vluchtCyclus.DroneId}</TableCell>
-                        <TableCell>{vluchtCyclus.ZoneId}</TableCell>
+                        <TableCell className="font-medium">{vluchtCyclus.Id}</TableCell>
+                        <TableCell>{vluchtCyclus.VerslagId ?? 'N/A'}</TableCell>
+                        <TableCell>{vluchtCyclus.PlaatsId ?? 'N/A'}</TableCell>
+                        <TableCell>{vluchtCyclus.DroneId ?? 'N/A'}</TableCell>
+                        <TableCell>{vluchtCyclus.ZoneId ?? 'N/A'}</TableCell>
                         <TableCell className="text-right">
                             <Button variant="ghost" size="icon" className="mr-2" disabled>
                                 <Edit className="h-4 w-4" />
@@ -77,6 +80,12 @@ export default function VluchtCyclusList({ vluchtCycli }: VluchtCyclusListProps)
                     </TableRow>
                 ))}
             </TableBody>
+            <TableFooter>
+                <TableRow>
+                    <TableCell colSpan={5}>Total Vlucht Cycli</TableCell>
+                    <TableCell className="text-right">{vluchtCycli.length}</TableCell>
+                </TableRow>
+            </TableFooter>
         </Table>
     );
 }

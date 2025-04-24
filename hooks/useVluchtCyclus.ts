@@ -2,12 +2,16 @@ import { VluchtCyclus } from '@/app/types';
 
 const apiUrl = 'https://drone.ziasvannes.tech/api/vlucht-cycli';
 
-interface VluchtCyclusInput {
-    VerslagId: number | undefined;
-    PlaatsId: number | undefined;
-    DroneId: number | undefined;
-    ZoneId: number | undefined;
+// Type for data sent to API (snake_case keys)
+interface VluchtCyclusApiInput {
+    verslag_id?: number | null; // Use snake_case and allow null
+    plaats_id?: number | null;
+    drone_id?: number | null;
+    zone_id?: number | null;
 }
+
+// Type for the reset function
+type ResetVluchtCyclusForm = () => void;
 
 async function getVluchtCycli(): Promise<VluchtCyclus[]> {
     console.log(`Server-side fetch initiated for: ${apiUrl}`);
@@ -30,9 +34,27 @@ async function getVluchtCycli(): Promise<VluchtCyclus[]> {
             throw new Error(`Failed to fetch ${apiUrl}`);
         }
 
-        const data: VluchtCyclus[] = await res.json();
+        // Verify Content-Type before parsing
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            const responseText = await res.text();
+            console.error(`Expected JSON but received ${contentType} from ${apiUrl}`);
+            console.error(`Response body: ${responseText.substring(0, 500)}...`);
+            throw new Error(`API route ${apiUrl} did not return JSON. Received: ${contentType}`);
+        }
+
+
+        const data = await res.json();
         console.log(`Fetched ${data.length} vlucht cycli from ${apiUrl}`);
-        return data;
+        // Map API response (PascalCase IDs) to frontend type (PascalCase)
+        return data.map((item: any) => ({
+            Id: item.Id,
+            VerslagId: item.VerslagId,
+            PlaatsId: item.PlaatsId,
+            DroneId: item.DroneId,
+            ZoneId: item.ZoneId
+        })) as VluchtCyclus[];
+
     } catch (error) {
         console.error(`Error in getVluchtCycli fetching ${apiUrl}:`, error);
         // Re-throw the error so Next.js can handle it (e.g., show error.tsx)
@@ -49,8 +71,12 @@ const handleDelete = async (id: number) => {
             // TODO: Refresh data - Need a better way, e.g., router.refresh() or state management
             window.location.reload(); // Simple but not ideal
         } else {
-            const errorData = await res.json();
-            alert(`Failed to delete vlucht cyclus: ${errorData.error || res.statusText}`);
+            let errorMsg = `Failed to delete vlucht cyclus (${res.status})`;
+            try {
+                const errorData = await res.json();
+                errorMsg = errorData.error || errorMsg;
+            } catch (e) { /* Ignore if response not JSON */ }
+            alert(errorMsg);
         }
     } catch (error) {
         console.error("Error deleting vlucht cyclus:", error);
@@ -59,41 +85,61 @@ const handleDelete = async (id: number) => {
 };
 
 const handleAddVluchtCyclus = async (
-    formData: VluchtCyclusInput,
+    apiData: VluchtCyclusApiInput, // Expect snake_case data
     setIsLoading: (isLoading: boolean) => void,
     setError: (error: string | null) => void,
     setIsOpen: (isOpen: boolean) => void,
-    setFormData: (formData: VluchtCyclusInput) => void
+    resetForm: ResetVluchtCyclusForm // Use the specific reset function type
 ) => {
     setIsLoading(true);
     setError(null);
+
+    // Remove keys with null or undefined values if API expects only provided keys
+    const filteredApiData = Object.entries(apiData).reduce((acc, [key, value]) => {
+        if (value !== null && value !== undefined && value !== '') { // Exclude empty strings too
+            acc[key as keyof VluchtCyclusApiInput] = value;
+        }
+        return acc;
+    }, {} as Partial<VluchtCyclusApiInput>);
+
+    // Ensure at least one ID is present after filtering
+    if (Object.keys(filteredApiData).length === 0) {
+        setError("Please provide at least one valid ID (Verslag, Plaats, Drone, or Zone).");
+        setIsLoading(false);
+        return;
+    }
+
+    console.log("Sending VluchtCyclus Data:", filteredApiData);
+
     try {
         const res = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(formData),
+            body: JSON.stringify(filteredApiData), // Send filtered data
         });
 
         if (!res.ok) {
-            const errorData = await res.json();
-            setError(errorData.error || res.statusText);
-            setIsLoading(false);
-            return;
+            let errorMsg = `Failed to add vlucht cyclus (${res.status})`;
+            try {
+                const errorData = await res.json();
+                errorMsg = errorData.error || errorMsg;
+            } catch (e) { /* Ignore if response not JSON */ }
+            throw new Error(errorMsg);
         }
 
-        alert('Vlucht cyclus added successfully');
         setIsOpen(false);
-        setFormData({
-            VerslagId: 0,
-            PlaatsId: 0,
-            DroneId: 0,
-            ZoneId: 0
-        });
-    } catch (error) {
+        resetForm(); // Call the reset function
+        alert('Vlucht cyclus added successfully');
+        window.location.reload(); // Refresh page
+
+    } catch (error: any) {
+        setError(error.message || "An unknown error occurred.");
         console.error("Error adding vlucht cyclus:", error);
-        alert("An error occurred while adding the vlucht cyclus.");
+        // Keep dialog open by not calling setIsOpen(false) on error
+    } finally {
+        setIsLoading(false);
     }
 }
 

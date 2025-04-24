@@ -6,22 +6,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { PlusCircle } from "lucide-react"; // Import icon
 import useStartplaats from '@/hooks/useStartplaats';
 
 interface StartplaatsFormData {
-  id: number,
-  naam: string;
   locatie: string;
-  isBeschikbaar: boolean;
+  isbeschikbaar: boolean; // Match DB/API snake_case
 }
 
 export function AddStartplaatsDialog() {
+  const { handleAddStartplaats } = useStartplaats; // Destructure the hook function
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<StartplaatsFormData>({
-    id: 0,
-    naam: '',
     locatie: '',
-    isBeschikbaar: false
+    isbeschikbaar: true // Default to true
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,22 +29,30 @@ export function AddStartplaatsDialog() {
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
 
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      isbeschikbaar: e.target.checked,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    useStartplaats.handleAddStartplaats(
+    handleAddStartplaats(
       formData,
       setIsLoading,
       setError,
-      setIsOpen,
-      setFormData,
+      setIsOpen, // Pass setIsOpen
+      (resetData) => setFormData(resetData as StartplaatsFormData) // Pass reset callback
     )
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>Add Startplaats</Button>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add Startplaats
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -55,10 +61,6 @@ export function AddStartplaatsDialog() {
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div>
-              <Label htmlFor="naam">Naam</Label>
-              <Input id="naam" value={formData.naam} onChange={handleInputChange} required />
-            </div>
-            <div>
               <Label htmlFor="locatie">Locatie</Label>
               <Input id="locatie" value={formData.locatie} onChange={handleInputChange} required />
             </div>
@@ -66,11 +68,12 @@ export function AddStartplaatsDialog() {
               <Label htmlFor="isBeschikbaar">Beschikbaar</Label>
               <input
                 type="checkbox"
-                id="isBeschikbaar"
-                checked={formData.isBeschikbaar}
-                onChange={(e) => setFormData((prev) => ({ ...prev, isBeschikbaar: e.target.checked }))}
+                id="isBeschikbaar" // Use camelCase for state/ID mapping
+                checked={formData.isbeschikbaar} // Use snake_case state field
+                onChange={handleCheckboxChange}
               />
             </div>
+            {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>

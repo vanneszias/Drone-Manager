@@ -1,12 +1,21 @@
 import { Docking } from "@/app/types";
 
-const apiUrl = "https://drone.ziasvannes.tech/api/dockings";
+const apiUrl = "https://drone.ziasvannes.tech/api/docking"; // Corrected API Endpoint base
+
+// Type for data sent to API
+interface DockingInput {
+  locatie: string;
+  isbeschikbaar: boolean;
+}
+
+// Type for the reset function argument (partial is fine here)
+type ResetDockingForm = (formData: Partial<DockingInput>) => void;
 
 // Function to fetch dockings from your API
 async function getDockings(): Promise<Docking[]> {
   console.log(`Fetching dockings from: ${apiUrl}`);
   try {
-    const res = await fetch(apiUrl, { cache: "no-store" });
+    const res = await fetch(apiUrl, { cache: "no-store" }); // Fetch from base URL
     console.log(`Fetch response status: ${res.status}`);
 
     if (!res.ok) {
@@ -31,7 +40,12 @@ async function getDockings(): Promise<Docking[]> {
 
     const data = await res.json();
     console.log(`Successfully fetched dockings`);
-    return data as Docking[];
+    // Map API response (snake_case) to frontend type (camelCase if different, but here they match except casing)
+    return data.map((item: any) => ({
+      id: item.Id,
+      locatie: item.locatie,
+      isbeschikbaar: item.isbeschikbaar
+    })) as Docking[];
   } catch (error) {
     console.error(`Error in getDockings:`, error);
     throw error;
@@ -41,13 +55,17 @@ async function getDockings(): Promise<Docking[]> {
 const handleDelete = async (id: number) => {
   if (!confirm(`Are you sure you want to delete docking ${id}?`)) return;
   try {
-    const res = await fetch(`${apiUrl}/${id}`, { method: "DELETE" });
+    const res = await fetch(`${apiUrl}/${id}`, { method: "DELETE" }); // Use correct endpoint with ID
     if (res.ok) {
       alert("Docking deleted successfully");
       window.location.reload();
     } else {
-      const errorData = await res.json();
-      alert(`Failed to delete docking: ${errorData.error || res.statusText}`);
+      let errorMsg = `Failed to delete docking (${res.status})`;
+      try {
+        const errorData = await res.json();
+        errorMsg = errorData.error || errorMsg;
+      } catch (e) { /* Ignore if response not JSON */ }
+      alert(errorMsg);
     }
   } catch (error) {
     console.error("Error deleting docking:", error);
@@ -56,36 +74,40 @@ const handleDelete = async (id: number) => {
 };
 
 const handleAddDocking = async (
-  formData: Docking,
+  formData: DockingInput, // Expect the correct input type
   setIsLoading: (isLoading: boolean) => void,
   setError: (error: string | null) => void,
   setIsOpen: (isOpen: boolean) => void,
-  setFormData: (formData: Docking) => void
+  setFormData: ResetDockingForm // Use the specific reset function type
 ) => {
   setIsLoading(true);
   setError(null);
 
   // Basic validation
-  if (!formData.naam || !formData.locatie) {
-    setError("Name and location are required.");
+  if (!formData.locatie) {
+    setError("Location is required.");
     setIsLoading(false);
     return;
   }
 
   try {
-    const res = await fetch(apiUrl, {
+    const res = await fetch(apiUrl, { // Post to base URL
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(formData), // Send snake_case data
     });
 
     if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
+      let errorMsg = `Failed to add docking (${res.status})`;
+      try {
+        const errorData = await res.json();
+        errorMsg = errorData.error || errorMsg;
+      } catch (e) { /* Ignore if response not JSON */ }
+      throw new Error(errorMsg);
     }
 
     setIsOpen(false);
-    setFormData({ naam: "", locatie: "", id: 0 });
+    setFormData({ locatie: "", isbeschikbaar: true }); // Reset form to initial state
     alert("Docking added successfully!");
     window.location.reload();
   } catch (err: any) {
@@ -96,20 +118,5 @@ const handleAddDocking = async (
   }
 };
 
-// Helper to get status badge variant (if applicable)
-const getStatusBadgeVariant = (status: string): string => {
-  switch (status) {
-    case "AVAILABLE":
-      return "bg-green-100 text-green-800";
-    case "IN_USE":
-      return "bg-blue-100 text-blue-800";
-    case "MAINTENANCE":
-      return "bg-yellow-100 text-yellow-800";
-    case "OFFLINE":
-      return "bg-gray-100 text-gray-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
 
-export default { getDockings, handleDelete, handleAddDocking, getStatusBadgeVariant };
+export default { getDockings, handleDelete, handleAddDocking };

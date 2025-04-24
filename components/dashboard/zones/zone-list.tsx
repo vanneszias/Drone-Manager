@@ -1,7 +1,7 @@
 "use client"; // Make this a client component for interactions
 
 import React from 'react';
-import { Zone } from '@/app/types'; // Zorg dat je een Zone type hebt
+import { Zone } from '@/app/types'; // Ensure you have a Zone type matching the API response
 import {
   Table,
   TableHeader,
@@ -12,7 +12,7 @@ import {
   TableCell,
   TableCaption,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge"; // Remove if not using type/status badges
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2 } from 'lucide-react';
 import useZones from '@/hooks/useZones';
@@ -32,9 +32,10 @@ export default function ZoneList({ zones }: ZoneListProps) {
       <TableHeader>
         <TableRow>
           <TableHead className="w-[100px]">ID</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead>Status</TableHead>
+          <TableHead>Naam</TableHead>
+          <TableHead>Breedte (m)</TableHead>
+          <TableHead>Lengte (m)</TableHead>
+          <TableHead>Evenement ID</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -42,19 +43,20 @@ export default function ZoneList({ zones }: ZoneListProps) {
         {zones.map((zone) => (
           <TableRow key={zone.Id}>
             <TableCell className="font-medium">{zone.Id}</TableCell>
-            <TableCell>{zone.name}</TableCell>
+            <TableCell>{zone.naam}</TableCell>
             <TableCell>
-              <Badge className={useZones.getTypeBadgeVariant(zone.type)}>{zone.type}</Badge>
+              {zone.breedte.toFixed(2)} {/* Format numbers */}
             </TableCell>
             <TableCell>
-              <Badge className={useZones.getStatusBadgeVariant(zone.status)}>{zone.status}</Badge>
+              {zone.lengte.toFixed(2)} {/* Format numbers */}
             </TableCell>
+            <TableCell>{zone.EvenementId}</TableCell>
             <TableCell className="text-right">
               <Button variant="ghost" size="icon" className="mr-2" disabled>
                 <Edit className="h-4 w-4" />
                 <span className="sr-only">Edit</span>
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => useZones.handleDelete(zone.Id)}>
+              <Button variant="ghost" size="icon" onClick={() => useZones.handleDelete(zone.Id.toString())}> {/* ID is number, convert to string */}
                 <Trash2 className="h-4 w-4 text-destructive" />
                 <span className="sr-only">Delete</span>
               </Button>
@@ -64,7 +66,7 @@ export default function ZoneList({ zones }: ZoneListProps) {
       </TableBody>
       <TableFooter>
         <TableRow>
-          <TableCell colSpan={4}>Total Zones</TableCell>
+          <TableCell colSpan={5}>Total Zones</TableCell> {/* Adjusted colSpan */}
           <TableCell className="text-right">{zones.length}</TableCell>
         </TableRow>
       </TableFooter>
