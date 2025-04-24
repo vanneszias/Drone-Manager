@@ -1,6 +1,7 @@
-import { Zone } from "@/app/types";
+import { Zone, Evenement } from "@/app/types";
 
 const apiUrl = "https://drone.ziasvannes.tech/api/zones";
+const eventsApiUrl = "https://drone.ziasvannes.tech/api/events";
 
 async function getZones(): Promise<Zone[]> {
   console.log(`Server-side fetch initiated for: ${apiUrl}`);
@@ -77,7 +78,7 @@ const handleAddZone = async (
         breedte: formData.breedte,
         lengte: formData.lengte,
         naam: formData.naam,
-        EvenementId: formData.EvenementId,
+        evenement_id: formData.EvenementId, // Aangepast naar evenement_id zoals verwacht door de API
       }),
     });
 
@@ -127,7 +128,7 @@ const handleUpdateZone = async (
         naam: formData.naam,
         breedte: formData.breedte,
         lengte: formData.lengte,
-        EvenementId: formData.EvenementId,
+        evenement_id: formData.EvenementId, // Added this line to include the event ID
       }),
     });
 
@@ -156,9 +157,41 @@ const handleUpdateZone = async (
   }
 };
 
+const fetchEvents = async (): Promise<Evenement[]> => {
+  console.log(`Fetching events from: ${eventsApiUrl}`);
+  try {
+    const res = await fetch(eventsApiUrl, {
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    console.log(`Fetch response status from ${eventsApiUrl}: ${res.status}`);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(
+        `Error fetching ${eventsApiUrl}: ${res.status} ${res.statusText}`
+      );
+      console.error(`Response body: ${errorText.substring(0, 500)}...`);
+      throw new Error(
+        `Failed to fetch events. Status: ${res.status}. Check server logs.`
+      );
+    }
+
+    const data = await res.json();
+    return data as Evenement[];
+  } catch (error) {
+    console.error(`Error in fetchEvents:`, error);
+    throw error;
+  }
+};
+
 export default {
   getZones,
   handleDelete,
   handleAddZone,
   handleUpdateZone,
+  fetchEvents
 };

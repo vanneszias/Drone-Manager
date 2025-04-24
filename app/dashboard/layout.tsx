@@ -1,8 +1,10 @@
-import React from "react";
-import Header from "@/components/global/header"; // Or a new DashboardHeader
-import Footer from "@/components/global/footer"; // Or remove if dashboard doesn't need it
+"use client";
 
+import React from "react";
+import Header from "@/components/global/header";
+import Footer from "@/components/global/footer";
 import { Button } from "@/components/ui/button";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 export default function DashboardLayout({
@@ -10,9 +12,9 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Check if the current route is the root of the dashboard
-  const isDashboardRoot =
-    typeof window !== "undefined" && window.location.pathname === "/dashboard";
+
+  const pathname = usePathname();
+  const isDashboardRoot = pathname === "/dashboard";
 
   return (
     <div className="flex flex-col min-h-screen">
