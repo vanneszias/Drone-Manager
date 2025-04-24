@@ -1,122 +1,101 @@
-"use client";
+import { DockingCyclus } from '@/app/types';
 
-import { useState, useEffect } from "react";
-import { DockingCyclus } from "@/app/types";
+const apiUrl = 'https://drone.ziasvannes.tech/api/docking-cycli';
 
-const apiUrl = "https://drone.ziasvannes.tech/api/docking-cyclus";
-
-// Function to fetch docking cyclus from your API
-async function getDockingCyclus(): Promise<DockingCyclus[]> {
+async function getDockingCycli(): Promise<DockingCyclus[]> {
   console.log(`Server-side fetch initiated for: ${apiUrl}`);
 
   try {
     const res = await fetch(apiUrl, {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error(
-        `Error fetching ${apiUrl}: ${res.status} ${res.statusText}`
-      );
-      throw new Error(
-        `Failed to fetch docking cyclus. Server responded with: ${res.status} - ${res.statusText}`
-      );
-    }
-
-    const contentType = res.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      throw new Error(`Expected JSON response but received: ${contentType}`);
-    }
-
-    return await res.json();
-  } catch (error) {
-    console.error("Error in getDockingCyclus:", error);
-    throw new Error("Unable to fetch docking cyclus. Please try again later.");
-  }
-}
-
-async function createDockingCyclus(
-  dockingCyclus: DockingCyclus
-): Promise<DockingCyclus> {
-  console.log(`Server-side fetch initiated for: ${apiUrl}`);
-  try {
-    const res = await fetch(apiUrl, {
-      method: "POST",
+      cache: 'no-store',
       headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(dockingCyclus),
+        'Accept': 'application/json',
+      }
     });
+
     if (!res.ok) {
-      const errorText = await res.text();
-      console.error(
-        `Error fetching ${apiUrl}: ${res.status} ${res.statusText}`
-      );
-      throw new Error(
-        `Failed to create docking cyclus. Server responded with: ${res.status} - ${res.statusText}`
-      );
+      throw new Error(`Failed to fetch docking cycli. Status: ${res.status}`);
     }
-    const contentType = res.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      throw new Error(`Expected JSON response but received: ${contentType}`);
-    }
-    return await res.json();
+
+    const data = await res.json();
+    return data as DockingCyclus[];
+
   } catch (error) {
-    console.error("Error in createDockingCyclus:", error);
-    throw new Error("Unable to create docking cyclus. Please try again later.");
+    console.error(`Error in getDockingCycli:`, error);
+    throw error;
   }
 }
 
-function useDockingCyclus() {
-  const [dockingCyclus, setDockingCyclus] = useState<DockingCyclus[]>([]);
+const handleDelete = async (Id: number) => {
+  if (!confirm(`Weet je zeker dat je deze docking cyclus wilt verwijderen?`)) return;
+  
+  try {
+    const res = await fetch(`${apiUrl}/${Id}`, {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
 
-  const fetchDockingCyclus = async () => {
-    try {
-      const data = await getDockingCyclus();
-      setDockingCyclus(data);
-    } catch (error) {
-      console.error("Failed to fetch docking cyclus:", error);
+    if (!res.ok) {
+      throw new Error('Failed to delete docking cyclus');
     }
-  };
 
-  const handleAddDockingCyclus = async (
-    newDockingCyclus: DockingCyclus,
-    setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
-    setError: React.Dispatch<React.SetStateAction<string | null>>,
-    setIsOpen: React.Dispatch<React.SetStateAction<boolean>>,
-    setFormData: React.Dispatch<React.SetStateAction<DockingCyclus>>
-  ) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const createdDockingCyclus = await createDockingCyclus(newDockingCyclus);
-      setDockingCyclus((prev) => [...prev, createdDockingCyclus]);
-      setIsOpen(false);
-      setFormData({
-        locatie: "",
-        capaciteit: 0,
-        status: "AVAILABLE",
-      } as DockingCyclus);
-    } catch (error) {
-      console.error("Failed to create docking cyclus:", error);
-      setError("Failed to create docking cyclus. Please try again.");
-    } finally {
-      setIsLoading(false);
+    window.location.reload();
+  } catch (error) {
+    console.error("Error deleting docking cyclus:", error);
+    alert("Er is een fout opgetreden bij het verwijderen.");
+  }
+};
+
+const handleAddDockingCyclus = async (
+  formData: DockingCyclus,
+  setIsLoading: (isLoading: boolean) => void,
+  setError: (error: string | null) => void,
+  setIsOpen: (isOpen: boolean) => void,
+  setFormData: (formData: DockingCyclus) => void
+) => {
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        DroneId: formData.DroneId,
+        DockingId: formData.DockingId,
+        CyclusId: formData.CyclusId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to add docking cyclus (${response.status})`);
     }
-  };
 
-  useEffect(() => {
-    fetchDockingCyclus();
-  }, []);
+    setIsOpen(false);
+    setFormData({
+      Id: 0,
+      DockingId: 0,
+      CyclusId: 0,
+      DroneId: 0
+    } as DockingCyclus);
 
-  return {
-    dockingCyclus,
-    fetchDockingCyclus,
-    handleAddDockingCyclus,
-  };
-}
+    alert('Docking Cyclus succesvol toegevoegd!');
+    window.location.reload();
+  } catch (error) {
+    console.error('Error adding docking cyclus:', error);
+    setError(error instanceof Error ? error.message : 'Failed to add docking cyclus');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-export default useDockingCyclus;
+export default {
+  getDockingCycli,
+  handleDelete,
+  handleAddDockingCyclus
+};

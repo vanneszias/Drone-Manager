@@ -45,9 +45,9 @@ export interface Startplaats {
 
 export interface DockingCyclus {
   id: number;
-  locatie: string;
-  capaciteit: number;
-  status: "AVAILABLE" | "IN_USE" | "MAINTENANCE" | "OFFLINE";
+  dockingId: number;
+  cyclusId: number;
+  droneId: number;
 }
 
 // Define and export the Docking type
