@@ -52,62 +52,22 @@ export default function DockingCyclusList({
 
   const getDroneDetails = (droneId: number) => {
     const drone = drones.find((d) => d.Id === droneId);
-    if (!drone) return `Drone #${droneId}`;
-    return (
-      <div className="space-y-1">
-        <div className="font-medium">Drone #{droneId}</div>
-        <Badge
-          variant="secondary"
-          className={
-            drone.status === "AVAILABLE"
-              ? "bg-green-100 text-green-800"
-              : drone.status === "IN_USE"
-              ? "bg-blue-100 text-blue-800"
-              : drone.status === "MAINTENANCE"
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-gray-100 text-gray-800"
-          }
-        >
-          {drone.status}
-        </Badge>
-        <div className="text-sm text-muted-foreground">
-          Batterij: {drone.batterij}%
-        </div>
-      </div>
-    );
+    if (!drone) return `Drone ${droneId}`;
+    return `Drone ${drone.Id} (${drone.status})`;
   };
 
   const getDockingDetails = (dockingId: number) => {
     const docking = dockings.find((d) => d.Id === dockingId);
-    if (!docking) return `Docking #${dockingId}`;
-    return (
-      <div className="space-y-1">
-        <div className="font-medium">Docking #{dockingId}</div>
-        <div className="text-sm">{docking.locatie}</div>
-        <Badge
-          variant={docking.isbeschikbaar ? "default" : "secondary"}
-          className={
-            docking.isbeschikbaar
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }
-        >
-          {docking.isbeschikbaar ? "Beschikbaar" : "Bezet"}
-        </Badge>
-      </div>
-    );
+    if (!docking) return `Docking ${dockingId}`;
+    return `${docking.locatie} (${
+      docking.isbeschikbaar ? "Available" : "Not Available"
+    })`;
   };
 
   const getCyclusDetails = (cyclusId: number) => {
     const cyclus = cycli.find((c) => c.Id === cyclusId);
-    if (!cyclus) return `Cyclus #${cyclusId}`;
-    return (
-      <div className="space-y-1">
-        <div className="font-medium">Cyclus #{cyclusId}</div>
-        <div className="text-sm">Start: {cyclus.startuur}</div>
-        <div className="text-sm">Tijdstip: {cyclus.tijdstip}</div>
-      </div>
-    );
+    if (!cyclus) return `Cyclus ${cyclusId}`;
+    return `Cyclus ${cyclus.Id} (${cyclus.startuur})`;
   };
 
   const handleEdit = (dockingCyclus: DockingCyclus) => {

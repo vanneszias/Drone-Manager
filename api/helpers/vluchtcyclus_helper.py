@@ -121,7 +121,7 @@ class VluchtCyclusHelper:
             if not any(val is not None for val in merged_data.values()):
                 raise ValueError("Cannot update: at least one ID must remain set")
 
-            response = supabase.table(VluchtCyclusHelper.TABLE_NAME).update(update_data).eq("Id", vlucht_cyclus_id).execute()
+            response = supabase.table(VluchtCyclusHelper.TABLE_NAME).update(merged_data).eq("Id", vlucht_cyclus_id).execute()
             if response.data:
                 return response.data[0]
             else:

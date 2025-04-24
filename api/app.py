@@ -995,7 +995,7 @@ def update_vlucht_cyclus(vlucht_cyclus_id):
             'VerslagId': 'VerslagId',
             'PlaatsId': 'PlaatsId',
             'DroneId': 'DroneId',
-            'ZoneIdd': 'ZoneIdd'
+            'ZoneId': 'ZoneId'
         }
 
         # Extract and validate each field if provided

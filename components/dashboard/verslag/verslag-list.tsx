@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Verslag } from "@/app/types";
+import React, { useState, useEffect } from "react";
+import { Verslag, VluchtCyclus, Drone, Startplaats, Zone } from "@/app/types";
 import {
   Table,
   TableHeader,
@@ -26,6 +26,72 @@ export default function VerslagList({ verslagen }: VerslagListProps) {
   const { handleDelete } = useVerslag;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedVerslag, setSelectedVerslag] = useState<Verslag | null>(null);
+  const [vluchtCyclusDetails, setVluchtCyclusDetails] = useState<{
+    [key: number]: {
+      drone?: Drone;
+      plaats?: Startplaats;
+      zone?: Zone;
+    };
+  }>({});
+
+  useEffect(() => {
+    const fetchVluchtCyclusDetails = async () => {
+      try {
+        // Get unique VluchtCyclusIds
+        const cyclusIds = verslagen
+          .map((v) => v.VluchtCyclusId)
+          .filter((id): id is number => id != null);
+
+        for (const cyclusId of cyclusIds) {
+          const response = await fetch(
+            `https://drone.ziasvannes.tech/api/vlucht-cycli/${cyclusId}`
+          );
+          if (!response.ok) continue;
+
+          const vluchtCyclus: VluchtCyclus = await response.json();
+
+          const details: { drone?: Drone; plaats?: Startplaats; zone?: Zone } =
+            {};
+
+          if (vluchtCyclus.DroneId) {
+            const droneRes = await fetch(
+              `https://drone.ziasvannes.tech/api/drones/${vluchtCyclus.DroneId}`
+            );
+            if (droneRes.ok) {
+              details.drone = await droneRes.json();
+            }
+          }
+
+          if (vluchtCyclus.PlaatsId) {
+            const plaatsRes = await fetch(
+              `https://drone.ziasvannes.tech/api/startplaatsen/${vluchtCyclus.PlaatsId}`
+            );
+            if (plaatsRes.ok) {
+              details.plaats = await plaatsRes.json();
+            }
+          }
+
+          if (vluchtCyclus.ZoneId) {
+            const zoneRes = await fetch(
+              `https://drone.ziasvannes.tech/api/zones/${vluchtCyclus.ZoneId}`
+            );
+            if (zoneRes.ok) {
+              details.zone = await zoneRes.json();
+            }
+          }
+
+          setVluchtCyclusDetails((prev) => ({
+            ...prev,
+            [cyclusId]: details,
+          }));
+        }
+      } catch (error) {
+        console.error("Error fetching vluchtcyclus details:", error);
+      }
+    };
+
+    fetchVluchtCyclusDetails();
+  }, [verslagen]);
 
   const handleEdit = (verslag: Verslag) => {
     setSelectedVerslag(verslag);
@@ -55,7 +121,7 @@ export default function VerslagList({ verslagen }: VerslagListProps) {
             <TableHead>Inhoud</TableHead>
             <TableHead>Verzonden</TableHead>
             <TableHead>Geaccepteerd</TableHead>
-            <TableHead>VluchtCyclus ID</TableHead>
+            <TableHead>VluchtCyclus Details</TableHead>
             <TableHead className="text-right">Acties</TableHead>
           </TableRow>
         </TableHeader>
@@ -89,7 +155,47 @@ export default function VerslagList({ verslagen }: VerslagListProps) {
                   {verslag.isgeaccepteerd ? "Ja" : "Nee"}
                 </Badge>
               </TableCell>
-              <TableCell>{verslag.VluchtCyclusId ?? "N/A"}</TableCell>
+              <TableCell>
+                {verslag.VluchtCyclusId ? (
+                  <div className="text-sm">
+                    {vluchtCyclusDetails[verslag.VluchtCyclusId]?.drone && (
+                      <div className="mb-1">
+                        Drone:{" "}
+                        {
+                          vluchtCyclusDetails[verslag.VluchtCyclusId]?.drone
+                            ?.status
+                        }
+                        (Batterij:{" "}
+                        {
+                          vluchtCyclusDetails[verslag.VluchtCyclusId]?.drone
+                            ?.batterij
+                        }
+                        %)
+                      </div>
+                    )}
+                    {vluchtCyclusDetails[verslag.VluchtCyclusId]?.plaats && (
+                      <div className="mb-1">
+                        Startplaats:{" "}
+                        {
+                          vluchtCyclusDetails[verslag.VluchtCyclusId]?.plaats
+                            ?.locatie
+                        }
+                      </div>
+                    )}
+                    {vluchtCyclusDetails[verslag.VluchtCyclusId]?.zone && (
+                      <div>
+                        Zone:{" "}
+                        {
+                          vluchtCyclusDetails[verslag.VluchtCyclusId]?.zone
+                            ?.naam
+                        }
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  "N/A"
+                )}
+              </TableCell>
               <TableCell className="text-right">
                 <Button
                   variant="ghost"
