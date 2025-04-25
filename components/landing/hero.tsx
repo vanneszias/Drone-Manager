@@ -38,7 +38,7 @@ export default function Hero() {
       </div>
 
       {/* Content aan linkerzijde met meer ruimte */}
-      <div className="relative z-20 container px-4 md:px-6 mx-auto h-full md:pl-20">
+      <div className="relative z-20 container px-4 md:px-6 mx-auto h-full md:pl-20 ">
         <div className="grid grid-cols-1 md:grid-cols-[60%_40%] gap-8 items-center h-full">
           <div className="space-y-6 max-w-xl text-white">
             <div className="inline-block rounded-lg bg-white bg-opacity-20 px-3 py-1 text-sm backdrop-blur-sm">
