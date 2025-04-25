@@ -20,14 +20,6 @@ export interface Drone {
 }
 
 // Add other types as needed (Event, Zone, etc.)
-export interface Evenement {
-  Id: number;
-  StartDatum: string; // Dates are strings in JSON
-  EindDatum: string;
-  StartTijd: string; // Times are strings in JSON
-  Tijdsduur: string;
-  Naam: string;
-}
 
 export interface Zone {
   Id: number;
@@ -60,9 +52,9 @@ export interface Docking {
 export interface Event {
   Id: number;
   Naam: string;
-  StartDatum: string;
+  StartDatum: string; // Dates are strings in ISO format (YYYY-MM-DD)
   EindDatum: string;
-  StartTijd: string;
+  StartTijd: string; // Times are strings in ISO format (HH:mm:ss)
   Tijdsduur: string;
 }
 
@@ -95,13 +87,4 @@ export interface DockingCyclus {
   DroneId: number;
   DockingId: number;
   CyclusId: number;
-}
-
-export interface Event {
-  Id: number;
-  Naam: string;
-  StartDatum: string;
-  EindDatum: string;
-  StartTijd: string;
-  Tijdsduur: string;
 }
