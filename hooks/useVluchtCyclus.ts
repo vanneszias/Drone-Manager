@@ -127,25 +127,30 @@ const handleDelete = async (id: number) => {
     return;
 
   try {
-    const res = await fetch(`${apiUrl}/${id}`, {
+    const response = await fetch(`${apiUrl}/${id}`, {
       method: "DELETE",
       headers: {
         Accept: "application/json",
       },
     });
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error("Delete vlucht cyclus error details:", errorData);
+    const responseData = await response.json().catch(() => null);
+    console.log("Delete response status:", response.status);
+    console.log("Delete response data:", responseData);
 
-      if (errorData.error?.toLowerCase().includes("references exist")) {
+    if (!response.ok) {
+      const errorMessage =
+        responseData?.error ||
+        `Fout bij het verwijderen van vluchtcyclus (${response.status})`;
+
+      if (errorMessage.toLowerCase().includes("references exist")) {
         alert(
           "Deze vluchtcyclus kan niet worden verwijderd omdat deze nog in gebruik is door andere onderdelen van het systeem."
         );
         return;
       }
 
-      throw new Error(errorData.error || "Failed to delete vlucht cyclus");
+      throw new Error(errorMessage);
     }
 
     window.location.reload();
@@ -164,7 +169,7 @@ const handleAddVluchtCyclus = async (
   setIsLoading: (isLoading: boolean) => void,
   setError: (error: string | null) => void,
   setIsOpen: (isOpen: boolean) => void,
-  setFormData: (formData: VluchtCyclus) => void
+  resetForm: () => void
 ) => {
   setIsLoading(true);
   setError(null);
@@ -184,24 +189,33 @@ const handleAddVluchtCyclus = async (
   }
 
   try {
+    const requestData = {
+      VerslagId: formData.VerslagId ? Number(formData.VerslagId) : null,
+      PlaatsId: formData.PlaatsId ? Number(formData.PlaatsId) : null,
+      DroneId: formData.DroneId ? Number(formData.DroneId) : null,
+      ZoneId: formData.ZoneId ? Number(formData.ZoneId) : null,
+    };
+
+    console.log("Sending request with data:", requestData);
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({
-        VerslagId: formData.VerslagId || null,
-        PlaatsId: formData.PlaatsId || null,
-        DroneId: formData.DroneId || null,
-        ZoneId: formData.ZoneId || null,
-      }),
+      body: JSON.stringify(requestData),
     });
 
+    const responseData = await response.json().catch(() => null);
+
+    console.log("Response status:", response.status);
+
+    console.log("Response data:", responseData);
+
     if (!response.ok) {
-      const errorData = await response.json();
       const errorMessage =
-        errorData.error ||
+        responseData?.error ||
         `Fout bij het toevoegen van vluchtcyclus (${response.status})`;
 
       // Map specific backend errors to user-friendly messages
@@ -231,12 +245,7 @@ const handleAddVluchtCyclus = async (
     }
 
     setIsOpen(false);
-    setFormData({
-      VerslagId: null,
-      PlaatsId: null,
-      DroneId: null,
-      ZoneId: null,
-    } as VluchtCyclus);
+    resetForm();
 
     alert("Vlucht cyclus succesvol toegevoegd!");
     window.location.reload();
@@ -293,11 +302,13 @@ const handleUpdateVluchtCyclus = async (
       body: JSON.stringify(updateData),
     });
 
+    const responseData = await response.json().catch(() => null);
+    console.log("Response status:", response.status);
+    console.log("Response data:", responseData);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error("Update vluchtcyclus error details:", errorData);
       const errorMessage =
-        errorData.error ||
+        responseData?.error ||
         `Fout bij het bijwerken van vluchtcyclus (${response.status})`;
 
       // Map specific backend errors to user-friendly messages

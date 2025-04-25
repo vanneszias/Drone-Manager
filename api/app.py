@@ -943,37 +943,50 @@ def create_vlucht_cyclus():
     app.logger.info(f"POST /api/vlucht-cycli data: {data}")
     if not data: return jsonify({"error": "No input data provided"}), 400
 
+    app.logger.info(f"Received POST request to /api/vlucht-cycli with data: {data}")
     try:
-        # At least one FK must be provided
-        fk_values = {
-            'VerslagId': None,
-            'PlaatsId': None,
-            'DroneId': None,
-            'ZoneId': None
-        }
+        verslag_id = data.get('VerslagId')
+        plaats_id = data.get('PlaatsId')
+        drone_id = data.get('DroneId')
+        zone_id = data.get('ZoneId')
+        
+        app.logger.debug(f"Parsed IDs - verslag: {verslag_id}, plaats: {plaats_id}, drone: {drone_id}, zone: {zone_id}")
 
-        # Extract provided FKs
-        for key in fk_values.keys():
-            if key in data:
-                val = data[key]
-                if val is not None:
-                    try:
-                        fk_values[key] = int(val)
-                    except (ValueError, TypeError):
-                        raise ValueError(f"Invalid format for {key}, must be an integer")
+        # Convert string IDs to integers if they exist
+        try:
+            verslag_id = int(verslag_id) if verslag_id is not None else None
+            plaats_id = int(plaats_id) if plaats_id is not None else None
+            drone_id = int(drone_id) if drone_id is not None else None
+            zone_id = int(zone_id) if zone_id is not None else None
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid format for IDs, must be integers"}), 400
 
-        # Check if at least one FK is provided with a value
-        if not any(val is not None for val in fk_values.values()):
-            return jsonify({"error": "At least one ID (verslag_id, plaats_id, drone_id, or zone_id) must be provided"}), 400
+        # Check if at least one ID is provided
+        if all(id is None for id in [verslag_id, plaats_id, drone_id, zone_id]):
+            return jsonify({"error": "At least one ID (VerslagId, PlaatsId, DroneId, or ZoneId) must be provided"}), 400
 
-        vlucht_cyclus = VluchtCyclusHelper.create_vlucht_cyclus(**fk_values)
-
-        if vlucht_cyclus:
-            app.logger.info(f"VluchtCyclus created successfully: {vlucht_cyclus.get('Id')}")
+        app.logger.info(f"Creating vluchtcyclus with data: verslag_id={verslag_id}, plaats_id={plaats_id}, drone_id={drone_id}, zone_id={zone_id}")
+        try:
+            vlucht_cyclus = VluchtCyclusHelper.create_vlucht_cyclus(
+                verslag_id=verslag_id,
+                plaats_id=plaats_id,
+                drone_id=drone_id,
+                zone_id=zone_id
+            )
+            
+            if not vlucht_cyclus:
+                app.logger.error("VluchtCyclusHelper.create_vlucht_cyclus returned None")
+                return jsonify({"error": "Failed to create VluchtCyclus"}), 500
+            
+            app.logger.info(f"Successfully created vluchtcyclus with ID: {vlucht_cyclus.get('Id')}")
             return jsonify(vlucht_cyclus), 201
-        else:
-            app.logger.error("VluchtCyclusHelper.create_vlucht_cyclus returned None.")
-            return jsonify({"error": "Failed to create VluchtCyclus (check reference IDs?)"}), 500
+            
+        except ValueError as ve:
+            app.logger.warning(f"Validation error creating vluchtcyclus: {str(ve)}")
+            return jsonify({"error": str(ve)}), 400
+        except Exception as e:
+            app.logger.error(f"Unexpected error creating vluchtcyclus: {str(e)}")
+            return jsonify({"error": "An unexpected error occurred while creating the vluchtcyclus"}), 500
     except ValueError as ve:
         return handle_error(ve, str(ve), 400)
     except KeyError as ke:
