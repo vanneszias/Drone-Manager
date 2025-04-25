@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Zone, Evenement } from "@/app/types";
+import { Zone, Event } from "@/app/types";
 import { PlusCircle } from "lucide-react";
 import useZones from "@/hooks/useZones";
 
@@ -42,7 +42,7 @@ export function AddZoneDialog() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [events, setEvents] = useState<Evenement[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
 
   useEffect(() => {
@@ -54,7 +54,9 @@ export function AddZoneDialog() {
           setEvents(fetchedEvents);
         } catch (error) {
           console.error("Failed to load events:", error);
-          setError(error instanceof Error ? error.message : "Failed to load events");
+          setError(
+            error instanceof Error ? error.message : "Failed to load events"
+          );
           setEvents([]);
         } finally {
           setEventsLoading(false);
@@ -186,8 +188,8 @@ export function AddZoneDialog() {
                 Event
               </Label>
               <div className="col-span-3">
-                <Select 
-                  value={formData.evenement_id.toString()} 
+                <Select
+                  value={formData.evenement_id.toString()}
                   onValueChange={handleEventSelect}
                   disabled={eventsLoading}
                 >

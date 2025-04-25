@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Zone, Evenement } from "@/app/types";
+import { Zone, Event } from "@/app/types";
 import {
   Table,
   TableHeader,
@@ -25,7 +25,7 @@ export default function ZoneList({ zones }: ZoneListProps) {
   const { handleDelete, fetchEvents } = useZones;
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
-  const [events, setEvents] = useState<Evenement[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
 
   useEffect(() => {
     const loadEvents = async () => {
