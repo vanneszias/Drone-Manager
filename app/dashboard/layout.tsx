@@ -29,47 +29,7 @@ export default function DashboardLayout({
             >
               Dashboard
             </Link>
-            <Link
-              href="/dashboard/drones"
-              className={`block p-2 rounded-lg ${
-                pathname === "/dashboard/drones"
-                  ? "bg-gray-200 font-medium"
-                  : "hover:bg-gray-200"
-              }`}
-            >
-              Drones
-            </Link>
-            <Link
-              href="/dashboard/cyclus"
-              className={`block p-2 rounded-lg ${
-                pathname === "/dashboard/cyclus"
-                  ? "bg-gray-200 font-medium"
-                  : "hover:bg-gray-200"
-              }`}
-            >
-              Cyclus
-            </Link>
-            <Link
-              href="/dashboard/dockingcyclus"
-              className={`block p-2 rounded-lg ${
-                pathname === "/dashboard/dockingcyclus"
-                  ? "bg-gray-200 font-medium"
-                  : "hover:bg-gray-200"
-              }`}
-            >
-              Docking Cyclus
-            </Link>
-            <Link
-              href="/dashboard/dockings"
-              className={`block p-2 rounded-lg ${
-                pathname === "/dashboard/dockings"
-                  ? "bg-gray-200 font-medium"
-                  : "hover:bg-gray-200"
-              }`}
-            >
-              Dockings
-            </Link>
-            <Link
+			<Link
               href="/dashboard/event"
               className={`block p-2 rounded-lg ${
                 pathname === "/dashboard/event"
@@ -79,7 +39,7 @@ export default function DashboardLayout({
             >
               Events
             </Link>
-            <Link
+			<Link
               href="/dashboard/startplaats"
               className={`block p-2 rounded-lg ${
                 pathname === "/dashboard/startplaats"
@@ -89,7 +49,57 @@ export default function DashboardLayout({
             >
               Start Places
             </Link>
-            <Link
+			<Link
+              href="/dashboard/drones"
+              className={`block p-2 rounded-lg ${
+                pathname === "/dashboard/drones"
+                  ? "bg-gray-200 font-medium"
+                  : "hover:bg-gray-200"
+              }`}
+            >
+              Drones
+            </Link>
+			<Link
+              href="/dashboard/dockings"
+              className={`block p-2 rounded-lg ${
+                pathname === "/dashboard/dockings"
+                  ? "bg-gray-200 font-medium"
+                  : "hover:bg-gray-200"
+              }`}
+            >
+              Dockings
+            </Link>
+			<Link
+              href="/dashboard/cyclus"
+              className={`block p-2 rounded-lg ${
+                pathname === "/dashboard/cyclus"
+                  ? "bg-gray-200 font-medium"
+                  : "hover:bg-gray-200"
+              }`}
+            >
+              Cyclus
+            </Link>
+			<Link
+              href="/dashboard/zones"
+              className={`block p-2 rounded-lg ${
+                pathname === "/dashboard/zones"
+                  ? "bg-gray-200 font-medium"
+                  : "hover:bg-gray-200"
+              }`}
+            >
+              Zones
+            </Link>
+			<Link
+              href="/dashboard/dockingcyclus"
+              className={`block p-2 rounded-lg ${
+                pathname === "/dashboard/dockingcyclus"
+                  ? "bg-gray-200 font-medium"
+                  : "hover:bg-gray-200"
+              }`}
+            >
+              Docking Cyclus
+            </Link>
+			<Link
               href="/dashboard/verslag"
               className={`block p-2 rounded-lg ${
                 pathname === "/dashboard/verslag"
@@ -99,7 +109,7 @@ export default function DashboardLayout({
             >
               Reports
             </Link>
-            <Link
+			<Link
               href="/dashboard/vluchtcyclus"
               className={`block p-2 rounded-lg ${
                 pathname === "/dashboard/vluchtcyclus"
@@ -108,16 +118,6 @@ export default function DashboardLayout({
               }`}
             >
               Flight Cycles
-            </Link>
-            <Link
-              href="/dashboard/zones"
-              className={`block p-2 rounded-lg ${
-                pathname === "/dashboard/zones"
-                  ? "bg-gray-200 font-medium"
-                  : "hover:bg-gray-200"
-              }`}
-            >
-              Zones
             </Link>
           </nav>
         </aside>
