@@ -14,13 +14,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlusCircle } from "lucide-react";
 import useEvents from "@/hooks/useEvents"; // Hook for API calls
+import { Event } from "@/app/types";  // Add this import
 
-interface EventFormData {
-  naam: string;
-  start_datum: string; // YYYY-MM-DD
-  eind_datum: string; // YYYY-MM-DD
-  start_tijd: string; // HH:MM[:SS]
-  tijdsduur: string; // HH:MM[:SS]
+interface EventFormData extends Omit<Event, 'Id'> {
+  Naam: string;
+  StartDatum: string;
+  EindDatum: string;
+  StartTijd: string;
+  Tijdsduur: string;
 }
 
 // Define the type for the data *sent* to the API (matches backend expectation)
@@ -34,11 +35,11 @@ export function AddEventDialog() {
 
   // Initialize state with the correct snake_case structure
   const [formData, setFormData] = useState<EventFormData>({
-    naam: "",
-    start_datum: "",
-    eind_datum: "",
-    start_tijd: "", // Initialize time strings, ensure format is handled on submit
-    tijdsduur: "", // Initialize time strings, ensure format is handled on submit
+    Naam: "",
+    StartDatum: "",
+    EindDatum: "",
+    StartTijd: "", // Initialize time strings, ensure format is handled on submit
+    Tijdsduur: "", // Initialize time strings, ensure format is handled on submit
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,35 +52,69 @@ export function AddEventDialog() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null); // Clear previous errors
-    console.log("Form Data before submit:", formData);
+    setError(null);
 
-    // The formData already matches the snake_case structure the API expects (EventApiInput)
-    // No casting needed here, just pass the formData directly.
-    const eventApiInputData = {
-      Id: 0, // temporary ID that will be set by the backend
-      Naam: formData.naam,
-      StartDatum: formData.start_datum,
-      EindDatum: formData.eind_datum,
-      StartTijd: formData.start_tijd,
-      Tijdsduur: formData.tijdsduur,
+    // Validate all required fields are present and not empty
+    const requiredFields = {
+      Naam: formData.Naam?.trim(),
+      StartDatum: formData.StartDatum?.trim(),
+      EindDatum: formData.EindDatum?.trim(),
+      StartTijd: formData.StartTijd?.trim(),
+      Tijdsduur: formData.Tijdsduur?.trim(),
     };
 
-    // Pass the correctly structured PascalCase data to the hook
+    const emptyFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+
+    if (emptyFields.length > 0) {
+      setError(`Missing required fields: ${emptyFields.join(", ")}`);
+      return;
+    }
+
+    // Validate dates
+    const startDate = new Date(formData.StartDatum);
+    const endDate = new Date(formData.EindDatum);
+
+    if (isNaN(startDate.getTime())) {
+      setError("Please enter a valid start date");
+      return;
+    }
+    if (isNaN(endDate.getTime())) {
+      setError("Please enter a valid end date");
+      return;
+    }
+    if (endDate < startDate) {
+      setError("End date cannot be before start date");
+      return;
+    }
+
+    const trimmedFormData = {
+      ...formData,
+      Naam: formData.Naam.trim(),
+      StartDatum: formData.StartDatum.trim(),
+      EindDatum: formData.EindDatum.trim(),
+      StartTijd: formData.StartTijd.trim(),
+      Tijdsduur: formData.Tijdsduur.trim(),
+    };
+
+    const eventApiInputData: Event = {
+      Id: 0,
+      ...trimmedFormData
+    };
+
     useEvents.handleAddEvent(
       eventApiInputData,
       setIsSubmitting,
       setError,
       setIsOpen,
-      // Map the resetData to match EventFormData structure
-      (resetData) =>
-        setFormData({
-          naam: "",
-          start_datum: "",
-          eind_datum: "",
-          start_tijd: "",
-          tijdsduur: "",
-        })
+      () => setFormData({
+        Naam: "",
+        StartDatum: "",
+        EindDatum: "",
+        StartTijd: "",
+        Tijdsduur: "",
+      })
     );
   };
 
@@ -102,13 +137,12 @@ export function AddEventDialog() {
           <div className="grid gap-4 py-4">
             {/* Name */}
             <div className="grid grid-cols-4 items-center gap-4">
-              {/* Use snake_case for htmlFor to match input id */}
-              <Label htmlFor="naam" className="text-right">
+              <Label htmlFor="Naam" className="text-right">
                 Name
               </Label>
               <Input
-                id="naam"
-                value={formData.naam}
+                id="Naam"
+                value={formData.Naam}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
@@ -117,13 +151,13 @@ export function AddEventDialog() {
 
             {/* Start Date */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="start_datum" className="text-right">
+              <Label htmlFor="StartDatum" className="text-right">
                 Start Date
               </Label>
               <Input
-                id="start_datum"
+                id="StartDatum"
                 type="date"
-                value={formData.start_datum}
+                value={formData.StartDatum}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
@@ -132,13 +166,13 @@ export function AddEventDialog() {
 
             {/* Start Time */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="start_tijd" className="text-right">
+              <Label htmlFor="StartTijd" className="text-right">
                 Start Time
               </Label>
               <Input
-                id="start_tijd"
+                id="StartTijd"
                 type="time"
-                value={formData.start_tijd}
+                value={formData.StartTijd}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
@@ -147,13 +181,13 @@ export function AddEventDialog() {
 
             {/* End Date */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="eind_datum" className="text-right">
+              <Label htmlFor="EindDatum" className="text-right">
                 End Date
               </Label>
               <Input
-                id="eind_datum"
+                id="EindDatum"
                 type="date"
-                value={formData.eind_datum}
+                value={formData.EindDatum}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
@@ -162,13 +196,13 @@ export function AddEventDialog() {
 
             {/* Duration */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tijdsduur" className="text-right">
+              <Label htmlFor="Tijdsduur" className="text-right">
                 Duration
               </Label>
               <Input
-                id="tijdsduur"
+                id="Tijdsduur"
                 type="time"
-                value={formData.tijdsduur}
+                value={formData.Tijdsduur}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
