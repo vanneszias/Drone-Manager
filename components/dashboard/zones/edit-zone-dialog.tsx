@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Zone, Evenement } from "@/app/types";
+import { Zone, Event } from "@/app/types";
 import useZones from "@/hooks/useZones";
 
 interface EditZoneDialogProps {
@@ -36,7 +36,7 @@ export function EditZoneDialog({
   const [formData, setFormData] = useState<Zone>(zone);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [events, setEvents] = useState<Evenement[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
 
   useEffect(() => {
@@ -52,7 +52,9 @@ export function EditZoneDialog({
           setEvents(fetchedEvents);
         } catch (error) {
           console.error("Failed to load events:", error);
-          setError(error instanceof Error ? error.message : "Failed to load events");
+          setError(
+            error instanceof Error ? error.message : "Failed to load events"
+          );
           setEvents([]);
         } finally {
           setEventsLoading(false);

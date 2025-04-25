@@ -526,19 +526,19 @@ def create_verslag():
         if not isinstance(is_geaccepteerd_val, bool): is_geaccepteerd_val = False
 
         # Handle optional nullable FK
-        vlucht_cyclus_id_val = data.get('vlucht_cyclus_id') # Expect snake_case
+        vlucht_cyclus_id_val = data.get('VluchtCyclusId') # Now expecting PascalCase to match frontend
         if vlucht_cyclus_id_val is not None:
             try:
                 vlucht_cyclus_id_val = int(vlucht_cyclus_id_val)
             except (ValueError, TypeError):
-                 raise ValueError("Invalid format for vlucht_cyclus_id, must be an integer or null")
+                 raise ValueError("Invalid format for VluchtCyclusId, must be an integer or null")
 
         verslag = VerslagHelper.create_verslag(
             onderwerp=onderwerp_str,
             inhoud=inhoud_str,
             is_verzonden=is_verzonden_val,
             is_geaccepteerd=is_geaccepteerd_val,
-            vlucht_cyclus_id=vlucht_cyclus_id_val # Pass the optional ID
+            vlucht_cyclus_id=vlucht_cyclus_id_val
         )
         if verslag:
             app.logger.info(f"Verslag created successfully: {verslag.get('Id')}")
@@ -580,15 +580,15 @@ def update_verslag(verslag_id):
              update_data['isgeaccepteerd'] = data['isgeaccepteerd']
 
         # Handle optional FK update (including setting to NULL)
-        if 'vlucht_cyclus_id' in data: # Expect snake_case from JSON
-            vc_id = data['vlucht_cyclus_id']
+        if 'VluchtCyclusId' in data: # Now expecting PascalCase from frontend
+            vc_id = data['VluchtCyclusId']
             if vc_id is None:
                  update_data['VluchtCyclusId'] = None # Pass None to helper
             else:
                  try:
                       update_data['VluchtCyclusId'] = int(vc_id) # Pass int to helper
                  except (ValueError, TypeError):
-                      raise ValueError("Invalid format for vlucht_cyclus_id, must be an integer or null")
+                      raise ValueError("Invalid format for VluchtCyclusId, must be an integer or null")
 
         if not update_data:
              return jsonify({"error": "No valid fields provided for update"}), 400
