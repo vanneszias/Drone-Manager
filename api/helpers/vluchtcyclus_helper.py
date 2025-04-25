@@ -1,5 +1,4 @@
 from typing import Dict, List, Optional
-from datetime import datetime
 from ..config import supabase
 import logging
 
@@ -49,46 +48,43 @@ class VluchtCyclusHelper:
             raise
 
     @staticmethod
-    def create_vlucht_cyclus(drone_id: int, plaats_id: int, zone_id: Optional[int] = None) -> Optional[Dict]:
-        """Create a new flight cycle with required drone and location."""
-        if not drone_id or not plaats_id:
-            raise ValueError("Both DroneId and PlaatsId are required.")
+    def create_vlucht_cyclus(verslag_id: Optional[int] = None, plaats_id: Optional[int] = None,
+                          drone_id: Optional[int] = None, zone_id: Optional[int] = None) -> Optional[Dict]:
+        """Create a new flight cycle. At least one FK must be provided."""
+        vlucht_cyclus_data = {}
+        
+        # Only include non-None values
+        if verslag_id is not None:
+            vlucht_cyclus_data["VerslagId"] = verslag_id
+        if plaats_id is not None:
+            vlucht_cyclus_data["PlaatsId"] = plaats_id
+        if drone_id is not None:
+            vlucht_cyclus_data["DroneId"] = drone_id
+        if zone_id is not None:
+            vlucht_cyclus_data["ZoneId"] = zone_id
 
-        vlucht_cyclus_data = {
-            "DroneId": drone_id,
-            "PlaatsId": plaats_id,
-            "ZoneId": zone_id,
-            "status": "PENDING",
-            "startTijd": None,
-            "eindTijd": None
-        }
+        if not vlucht_cyclus_data:
+            raise ValueError("Cannot create VluchtCyclus with no associated IDs.")
 
         try:
-            # Validate drone availability
-            drone_response = supabase.table("Drone").select("*").eq("Id", drone_id).execute()
-            if not drone_response.data:
-                raise ValueError(f"Drone with ID {drone_id} does not exist.")
-            drone = drone_response.data[0]
-            if drone["status"] != "AVAILABLE":
-                raise ValueError(f"Drone {drone_id} is not available (current status: {drone['status']}).")
-            if not drone["magOpstijgen"]:
-                raise ValueError(f"Drone {drone_id} is not allowed to take off.")
-
-            # Validate start location availability
-            plaats_response = supabase.table("Startplaats").select("*").eq("Id", plaats_id).execute()
-            if not plaats_response.data:
-                raise ValueError(f"Startplaats with ID {plaats_id} does not exist.")
-            plaats = plaats_response.data[0]
-            if not plaats["isbeschikbaar"]:
-                raise ValueError(f"Startplaats {plaats_id} is not available.")
-
-            # Validate zone if provided
-            if zone_id is not None:
-                zone_response = supabase.table("Zone").select("*").eq("Id", zone_id).execute()
+            # Validate references before insert
+            if "DroneId" in vlucht_cyclus_data:
+                drone_response = supabase.table("Drone").select("*").eq("Id", vlucht_cyclus_data["DroneId"]).execute()
+                if not drone_response.data:
+                    raise ValueError(f"Drone with ID {vlucht_cyclus_data['DroneId']} does not exist.")
+            if "ZoneId" in vlucht_cyclus_data:
+                zone_response = supabase.table("Zone").select("*").eq("Id", vlucht_cyclus_data["ZoneId"]).execute()
                 if not zone_response.data:
-                    raise ValueError(f"Zone with ID {zone_id} does not exist.")
+                    raise ValueError(f"Zone with ID {vlucht_cyclus_data['ZoneId']} does not exist.")
+            if "PlaatsId" in vlucht_cyclus_data:
+                plaats_response = supabase.table("Startplaats").select("*").eq("Id", vlucht_cyclus_data["PlaatsId"]).execute()
+                if not plaats_response.data:
+                    raise ValueError(f"Startplaats with ID {vlucht_cyclus_data['PlaatsId']} does not exist.")
+            if "VerslagId" in vlucht_cyclus_data:
+                verslag_response = supabase.table("Verslag").select("*").eq("Id", vlucht_cyclus_data["VerslagId"]).execute()
+                if not verslag_response.data:
+                    raise ValueError(f"Verslag with ID {vlucht_cyclus_data['VerslagId']} does not exist.")
 
-            # Create flight cycle
             response = supabase.table(VluchtCyclusHelper.TABLE_NAME).insert(vlucht_cyclus_data).execute()
             if not response.data:
                 error_msg = "Failed to create VluchtCyclus"
@@ -96,82 +92,78 @@ class VluchtCyclusHelper:
                     error_msg = f"Database error: {response.error.message}"
                 logger.error(f"Create VluchtCyclus failed: {error_msg}")
                 raise ValueError(error_msg)
-
-            # Update drone status
-            supabase.table("Drone").update({"status": "IN_USE"}).eq("Id", drone_id).execute()
-            
-            # Update starting location availability
-            supabase.table("Startplaats").update({"isbeschikbaar": False}).eq("Id", plaats_id).execute()
             
             return response.data[0]
         except Exception as e:
-            logger.error(f"Error creating vlucht cyclus: {e}")
+            if "violates foreign key constraint" in str(e):
+                logger.warning(f"Create VluchtCyclus failed due to invalid FK in data {vlucht_cyclus_data}")
+                raise ValueError("One or more reference IDs do not exist.")
+            logger.error(f"Error creating vlucht cyclus with data {vlucht_cyclus_data}: {e}")
             raise
 
     @staticmethod
-    def update_status(vlucht_cyclus_id: int, new_status: str) -> Optional[Dict]:
-        """Update flight cycle status and handle related state changes."""
-        valid_statuses = ["PENDING", "IN_PROGRESS", "COMPLETED", "CANCELLED"]
-        if new_status not in valid_statuses:
-            raise ValueError(f"Invalid status. Must be one of: {', '.join(valid_statuses)}")
+    def update_vlucht_cyclus(vlucht_cyclus_id: int, **kwargs) -> Optional[Dict]:
+        """Update an existing flight cycle."""
+        if not kwargs:
+            raise ValueError("No fields provided for update.")
+
+        update_data = {}
+        valid_fields = ["VerslagId", "PlaatsId", "DroneId", "ZoneId"]
+        
+        # Only include fields that are in kwargs
+        for field in valid_fields:
+            if field in kwargs:
+                update_data[field] = kwargs[field]
+
+        if not update_data:
+            raise ValueError("No valid fields provided for update.")
 
         try:
+            # First get existing record
             existing = VluchtCyclusHelper.get_vlucht_cyclus_by_id(vlucht_cyclus_id)
             if not existing:
-                raise ValueError(f"VluchtCyclus {vlucht_cyclus_id} not found.")
+                return None
 
-            update_data = {"status": new_status}
-            now = datetime.utcnow().isoformat()
+            # Merge existing data with updates to ensure we don't remove all FKs
+            merged_data = {
+                "VerslagId": existing.get("VerslagId"),
+                "PlaatsId": existing.get("PlaatsId"),
+                "DroneId": existing.get("DroneId"),
+                "ZoneId": existing.get("ZoneId")
+            }
+            merged_data.update(update_data)
 
-            if new_status == "IN_PROGRESS":
-                update_data["startTijd"] = now
-            elif new_status in ["COMPLETED", "CANCELLED"]:
-                update_data["eindTijd"] = now
-                # Free up resources
-                if existing["DroneId"]:
-                    supabase.table("Drone").update({"status": "AVAILABLE"}).eq("Id", existing["DroneId"]).execute()
-                if existing["PlaatsId"]:
-                    supabase.table("Startplaats").update({"isbeschikbaar": True}).eq("Id", existing["PlaatsId"]).execute()
+            # Verify at least one FK will remain non-null
+            if not any(val is not None for val in merged_data.values()):
+                raise ValueError("Cannot update: at least one ID must remain set")
 
-            response = supabase.table(VluchtCyclusHelper.TABLE_NAME).update(update_data).eq("Id", vlucht_cyclus_id).execute()
-            return response.data[0] if response.data else None
-        except Exception as e:
-            logger.error(f"Error updating vlucht cyclus status: {e}")
+            response = supabase.table(VluchtCyclusHelper.TABLE_NAME).update(merged_data).eq("Id", vlucht_cyclus_id).execute()
+            if response.data:
+                return response.data[0]
+            else:
+                if hasattr(response, 'error') and response.error:
+                    logger.error(f"Supabase update vlucht cyclus error: {response.error.message}")
+                    if "foreign key constraint" in response.error.message:
+                        raise ValueError("One or more reference IDs do not exist.")
+                else:
+                    logger.error(f"Supabase update vlucht cyclus {vlucht_cyclus_id} failed.")
+                return None
+        except ValueError:
             raise
-
-    @staticmethod
-    def attach_verslag(vlucht_cyclus_id: int, verslag_id: int) -> Optional[Dict]:
-        """Attach a report to a completed flight cycle."""
-        try:
-            existing = VluchtCyclusHelper.get_vlucht_cyclus_by_id(vlucht_cyclus_id)
-            if not existing:
-                raise ValueError(f"VluchtCyclus {vlucht_cyclus_id} not found.")
-            
-            if existing["status"] != "COMPLETED":
-                raise ValueError("Can only attach reports to completed flight cycles.")
-
-            verslag_response = supabase.table("Verslag").select("*").eq("Id", verslag_id).execute()
-            if not verslag_response.data:
-                raise ValueError(f"Verslag with ID {verslag_id} does not exist.")
-
-            response = supabase.table(VluchtCyclusHelper.TABLE_NAME).update({
-                "VerslagId": verslag_id
-            }).eq("Id", vlucht_cyclus_id).execute()
-            return response.data[0] if response.data else None
         except Exception as e:
-            logger.error(f"Error attaching verslag: {e}")
+            if "violates foreign key constraint" in str(e):
+                logger.warning(f"Update VluchtCyclus {vlucht_cyclus_id} failed due to invalid FK in data {update_data}")
+                raise ValueError("One or more reference IDs do not exist.")
+            logger.error(f"Error updating vlucht cyclus {vlucht_cyclus_id} with data {update_data}: {e}")
             raise
 
     @staticmethod
     def delete_vlucht_cyclus(vlucht_cyclus_id: int) -> bool:
-        """Delete a flight cycle if it's not in progress and has no references."""
+        """Delete a flight cycle"""
         try:
             existing = VluchtCyclusHelper.get_vlucht_cyclus_by_id(vlucht_cyclus_id)
             if not existing:
                 return False
-
-            if existing["status"] == "IN_PROGRESS":
-                raise ValueError("Cannot delete a flight cycle that is in progress.")
 
             # Check for Cyclus references
             ref_cyclus_response = supabase.table("Cyclus").select("Id").eq("VluchtCyclusId", vlucht_cyclus_id).limit(1).execute()
@@ -179,6 +171,9 @@ class VluchtCyclusHelper:
                 raise ValueError(f"Cannot delete VluchtCyclus {vlucht_cyclus_id} as it is referenced by Cyclus.")
 
             response = supabase.table(VluchtCyclusHelper.TABLE_NAME).delete().eq("Id", vlucht_cyclus_id).execute()
+            if hasattr(response, 'error') and response.error:
+                logger.error(f"Supabase delete vlucht cyclus {vlucht_cyclus_id} error: {response.error.message}")
+                raise Exception(f"Supabase delete vlucht cyclus error: {response.error.message}")
             return True
         except ValueError:
             raise
