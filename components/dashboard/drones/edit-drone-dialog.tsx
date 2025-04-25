@@ -62,6 +62,7 @@ export function EditDroneDialog({
     e.preventDefault();
     setError(null);
 
+    // Validate battery percentage
     if (formData.batterij < 0 || formData.batterij > 100) {
       setError("Battery percentage must be between 0 and 100");
       return;
@@ -78,29 +79,27 @@ export function EditDroneDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="glass-effect border-white/10">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-xl bg-clip-text text-transparent theme-gradient-2">
-            Edit Drone
-          </DialogTitle>
-          <DialogDescription className="text-white/70">
-            Make changes to the drone settings below
+          <DialogTitle>Edit Drone</DialogTitle>
+          <DialogDescription>
+            Make changes to the drone. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-6 py-4">
+          <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right text-white/70">
+              <Label htmlFor="status" className="text-right">
                 Status
               </Label>
               <Select
                 onValueChange={handleSelectChange}
                 defaultValue={formData.status}
               >
-                <SelectTrigger className="col-span-3 glass-effect">
+                <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent className="glass-effect-strong">
+                <SelectContent>
                   <SelectItem value="AVAILABLE">Available</SelectItem>
                   <SelectItem value="IN_USE">In Use</SelectItem>
                   <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
@@ -109,7 +108,7 @@ export function EditDroneDialog({
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="batterij" className="text-right text-white/70">
+              <Label htmlFor="batterij" className="text-right">
                 Battery (%)
               </Label>
               <Input
@@ -119,47 +118,33 @@ export function EditDroneDialog({
                 max="100"
                 value={formData.batterij}
                 onChange={handleInputChange}
-                className="col-span-3 input-base"
+                className="col-span-3"
                 required
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label
-                htmlFor="magOpstijgen"
-                className="text-right text-white/70"
-              >
+              <Label htmlFor="magOpstijgen" className="text-right">
                 Ready for Takeoff
               </Label>
-              <div className="col-span-3 flex items-center">
-                <input
-                  id="magOpstijgen"
-                  type="checkbox"
-                  checked={formData.magOpstijgen}
-                  onChange={handleInputChange}
-                  className="h-4 w-4 rounded border-white/20 bg-white/5 checked:bg-blue-500"
-                />
-              </div>
+              <input
+                id="magOpstijgen"
+                type="checkbox"
+                checked={formData.magOpstijgen}
+                onChange={handleInputChange}
+                className="col-span-3 h-4 w-4 justify-self-start"
+              />
             </div>
           </div>
-          {error && (
-            <p className="text-sm text-red-400 mb-4 bg-red-500/10 p-2 rounded-lg">
-              {error}
-            </p>
-          )}
-          <DialogFooter className="gap-2">
+          {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
+          <DialogFooter>
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={() => setIsOpen(false)}
-              className="button-secondary"
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="button-primary"
-            >
+            <Button type="submit" disabled={isLoading}>
               {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>

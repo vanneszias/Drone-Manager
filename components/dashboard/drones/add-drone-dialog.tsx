@@ -30,6 +30,7 @@ type DroneFormData = {
   magOpstijgen: boolean;
 };
 
+// Type for data sent to API
 type DroneApiInput = {
   status: Drone["status"];
   batterij: number;
@@ -39,7 +40,8 @@ type DroneApiInput = {
 export function AddDroneDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<DroneFormData>({
-    status: "OFFLINE",
+    // Use full type, provide defaults
+    status: "OFFLINE", // Default status
     magOpstijgen: false,
     batterij: 100,
   });
@@ -65,6 +67,7 @@ export function AddDroneDialog() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Prepare data for API (snake_case)
     const apiData: DroneApiInput = {
       status: formData.status,
       batterij: formData.batterij,
@@ -73,7 +76,7 @@ export function AddDroneDialog() {
     useDrones.handleAddDrone(
       {
         ...apiData,
-        Id: 0,
+        Id: 0, // ID is not needed for new drone
       },
       setIsLoading,
       setError,
@@ -85,33 +88,31 @@ export function AddDroneDialog() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="button-primary">
+        <Button>
           <PlusCircle className="mr-2 h-4 w-4" /> Add New Drone
         </Button>
       </DialogTrigger>
-      <DialogContent className="glass-effect border-white/10">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-xl bg-clip-text text-transparent theme-gradient-2">
-            Add New Drone
-          </DialogTitle>
-          <DialogDescription className="text-white/70">
-            Enter the details for the new drone below
+          <DialogTitle>Add New Drone</DialogTitle>
+          <DialogDescription>
+            Enter the details for the new drone. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="grid gap-6 py-4">
+          <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right text-white/70">
+              <Label htmlFor="status" className="text-right">
                 Status
               </Label>
               <Select
                 onValueChange={handleSelectChange}
                 defaultValue={formData.status}
               >
-                <SelectTrigger className="col-span-3 glass-effect">
+                <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent className="glass-effect-strong">
+                <SelectContent>
                   <SelectItem value="AVAILABLE">Available</SelectItem>
                   <SelectItem value="IN_USE">In Use</SelectItem>
                   <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
@@ -120,7 +121,7 @@ export function AddDroneDialog() {
               </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="batterij" className="text-right text-white/70">
+              <Label htmlFor="batterij" className="text-right">
                 Battery (%)
               </Label>
               <Input
@@ -130,47 +131,33 @@ export function AddDroneDialog() {
                 max="100"
                 value={formData.batterij ?? ""}
                 onChange={handleInputChange}
-                className="col-span-3 input-base"
+                className="col-span-3"
                 required
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label
-                htmlFor="magOpstijgen"
-                className="text-right text-white/70"
-              >
+              <Label htmlFor="mag_opstijgen" className="text-right">
                 Ready for Takeoff
               </Label>
-              <div className="col-span-3 flex items-center">
-                <input
-                  id="magOpstijgen"
-                  type="checkbox"
-                  checked={formData.magOpstijgen || false}
-                  onChange={handleInputChange}
-                  className="h-4 w-4 rounded border-white/20 bg-white/5 checked:bg-blue-500"
-                />
-              </div>
+              <input
+                id="mag_opstijgen"
+                type="checkbox"
+                checked={formData.magOpstijgen || false}
+                onChange={handleInputChange}
+                className="col-span-3 h-4 w-4 justify-self-start"
+              />
             </div>
           </div>
-          {error && (
-            <p className="text-sm text-red-400 mb-4 bg-red-500/10 p-2 rounded-lg">
-              {error}
-            </p>
-          )}
-          <DialogFooter className="gap-2">
+          {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
+          <DialogFooter>
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={() => setIsOpen(false)}
-              className="button-secondary"
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="button-primary"
-            >
+            <Button type="submit" disabled={isLoading}>
               {isLoading ? "Saving..." : "Save Drone"}
             </Button>
           </DialogFooter>

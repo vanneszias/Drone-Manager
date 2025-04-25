@@ -10,6 +10,7 @@ import {
   TableHead,
   TableRow,
   TableCell,
+  TableCaption,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,14 +34,12 @@ export default function DroneList({ drones }: DroneListProps) {
 
   if (!drones || drones.length === 0) {
     return (
-      <div className="card-base">
-        <div className="flex justify-center items-center min-h-[200px]">
-          <div className="text-center space-y-2">
-            <p className="text-white/70">No drones found</p>
-            <p className="text-sm text-white/60">
-              Click 'New Drone' to add one
-            </p>
-          </div>
+      <div className="flex justify-center items-center min-h-[200px]">
+        <div className="text-center">
+          <p className="text-muted-foreground">Geen drones gevonden.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Klik op 'Nieuwe Drone' om er een toe te voegen.
+          </p>
         </div>
       </div>
     );
@@ -49,36 +48,34 @@ export default function DroneList({ drones }: DroneListProps) {
   const getStatusBadgeStyle = (status: Drone["status"]) => {
     switch (status) {
       case "AVAILABLE":
-        return "glass-effect bg-emerald-500/10 text-emerald-400";
+        return "bg-green-100 text-green-800";
       case "IN_USE":
-        return "glass-effect bg-blue-500/10 text-blue-400";
+        return "bg-blue-100 text-blue-800";
       case "MAINTENANCE":
-        return "glass-effect bg-yellow-500/10 text-yellow-400";
+        return "bg-yellow-100 text-yellow-800";
       case "OFFLINE":
-        return "glass-effect bg-gray-500/10 text-gray-400";
+        return "bg-gray-100 text-gray-800";
       default:
-        return "glass-effect bg-gray-500/10 text-gray-400";
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   return (
-    <div className="glass-effect rounded-lg border border-white/10 overflow-hidden">
+    <>
       <Table>
         <TableHeader>
-          <TableRow className="border-white/10">
-            <TableHead className="w-[100px] text-white/70">ID</TableHead>
-            <TableHead className="text-white/70">Status</TableHead>
-            <TableHead className="text-white/70">Battery (%)</TableHead>
-            <TableHead className="text-white/70">Can Take Off</TableHead>
-            <TableHead className="text-right text-white/70">Actions</TableHead>
+          <TableRow>
+            <TableHead className="w-[100px]">ID</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Batterij (%)</TableHead>
+            <TableHead>Mag Opstijgen</TableHead>
+            <TableHead className="text-right">Acties</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {drones.map((drone) => (
-            <TableRow key={drone.Id} className="border-white/10">
-              <TableCell className="font-medium text-white/80">
-                {drone.Id}
-              </TableCell>
+            <TableRow key={drone.Id}>
+              <TableCell className="font-medium">{drone.Id}</TableCell>
               <TableCell>
                 <Badge
                   variant="secondary"
@@ -87,53 +84,55 @@ export default function DroneList({ drones }: DroneListProps) {
                   {drone.status}
                 </Badge>
               </TableCell>
-              <TableCell className="text-white/70">{drone.batterij}%</TableCell>
+              <TableCell>{drone.batterij}%</TableCell>
               <TableCell>
                 <Badge
-                  variant="secondary"
+                  variant={drone.magOpstijgen ? "default" : "secondary"}
                   className={
                     drone.magOpstijgen
-                      ? "glass-effect bg-emerald-500/10 text-emerald-400"
-                      : "glass-effect bg-red-500/10 text-red-400"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
                   }
                 >
-                  {drone.magOpstijgen ? "Yes" : "No"}
+                  {drone.magOpstijgen ? "Ja" : "Nee"}
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="mr-2 hover:glass-effect-strong"
+                  className="mr-2"
                   onClick={() => handleEdit(drone)}
                 >
-                  <Edit className="h-4 w-4 text-white/70" />
-                  <span className="sr-only">Edit drone</span>
+                  <Edit className="h-4 w-4" />
+                  <span className="sr-only">Bewerk drone</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hover:glass-effect-strong"
                   onClick={() => handleDelete(drone.Id)}
                 >
-                  <Trash2 className="h-4 w-4 text-red-400" />
-                  <span className="sr-only">Delete drone</span>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                  <span className="sr-only">Verwijder drone</span>
                 </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
         <TableFooter>
-          <TableRow className="border-white/10">
-            <TableCell colSpan={4} className="text-white/70">
-              Total Drones
-            </TableCell>
-            <TableCell className="text-right text-white/70">
-              {drones.length}
-            </TableCell>
+          <TableRow>
+            <TableCell colSpan={4}>Totaal Drones</TableCell>
+            <TableCell className="text-right">{drones.length}</TableCell>
           </TableRow>
         </TableFooter>
       </Table>
-    </div>
+      {selectedDrone && (
+        <EditDroneDialog
+          drone={selectedDrone}
+          isOpen={isEditOpen}
+          setIsOpen={setIsEditOpen}
+        />
+      )}
+    </>
   );
 }

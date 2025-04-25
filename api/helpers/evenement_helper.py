@@ -16,7 +16,7 @@ class EvenementHelper:
             return response.data
         except Exception as e:
             logger.error(f"Error fetching all events: {e}")
-            raise # Re-raise the exception to be caught by the route handler
+            raise
 
     @staticmethod
     def get_event_by_id(event_id: int) -> Optional[Dict]:
@@ -33,21 +33,24 @@ class EvenementHelper:
                    tijdsduur: time, naam: str) -> Optional[Dict]:
         """Create a new event"""
         if not naam or not naam.strip():
-             raise ValueError("Event name (Naam) cannot be empty")
+            raise ValueError("Event name (Naam) cannot be empty")
+        if eind_datum < start_datum:
+            raise ValueError("End date cannot be before start date")
+
+        # Convert Python objects to ISO format strings for Supabase
         event_data = {
             "StartDatum": start_datum.isoformat(),
             "EindDatum": eind_datum.isoformat(),
             "StartTijd": start_tijd.isoformat(),
-            "Tijdsduur": tijdsduur.isoformat(), # Ensure this TIME type makes sense for duration
+            "Tijdsduur": tijdsduur.isoformat(),
             "Naam": naam.strip()
         }
+
         try:
             response = supabase.table(EvenementHelper.TABLE_NAME).insert(event_data).execute()
-            # Check if insertion was successful and data is returned
             if response.data:
                 return response.data[0]
             else:
-                # Log Supabase error if available
                 if hasattr(response, 'error') and response.error:
                     logger.error(f"Supabase create event error: {response.error.message}")
                 else:
@@ -55,7 +58,7 @@ class EvenementHelper:
                 return None
         except Exception as e:
             logger.error(f"Error creating event with data {event_data}: {e}")
-            raise # Re-raise for route handler
+            raise
 
     @staticmethod
     def update_event(event_id: int, **kwargs) -> Optional[Dict]:

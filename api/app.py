@@ -90,19 +90,19 @@ def create_event():
     if not data:
         return jsonify({"error": "No input data provided"}), 400
 
-    # Expect snake_case keys from JSON
-    required_keys = ['start_datum', 'eind_datum', 'start_tijd', 'tijdsduur', 'naam']
+    # Expect PascalCase keys from frontend to match edit endpoint
+    required_keys = ['Naam', 'StartDatum', 'EindDatum', 'StartTijd', 'Tijdsduur']
     missing_keys = [key for key in required_keys if key not in data or data[key] is None]
     if missing_keys:
         return jsonify({"error": f"Missing required fields: {', '.join(missing_keys)}"}), 400
 
     try:
         # Validate and convert data types
-        start_datum_obj = date.fromisoformat(data['start_datum'])
-        eind_datum_obj = date.fromisoformat(data['eind_datum'])
-        start_tijd_obj = time.fromisoformat(data['start_tijd'])
-        tijdsduur_obj = time.fromisoformat(data['tijdsduur']) # Ensure TIME is correct for duration
-        naam_str = str(data['naam']).strip()
+        start_datum_obj = date.fromisoformat(data['StartDatum'])
+        eind_datum_obj = date.fromisoformat(data['EindDatum'])
+        start_tijd_obj = time.fromisoformat(data['StartTijd'])
+        tijdsduur_obj = time.fromisoformat(data['Tijdsduur'])
+        naam_str = str(data['Naam']).strip()
 
         if not naam_str:
             raise ValueError("Event name cannot be empty")
@@ -121,7 +121,6 @@ def create_event():
             app.logger.info(f"Event created successfully: {event.get('Id')}")
             return jsonify(event), 201
         else:
-             # Helper should raise error or return None if creation fails; handle potential None case
              app.logger.error("EvenementHelper.create_event returned None unexpectedly.")
              return jsonify({"error": "Failed to create event in database"}), 500
     except (ValueError, TypeError) as ve:
