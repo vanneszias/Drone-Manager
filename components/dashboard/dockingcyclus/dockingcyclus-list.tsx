@@ -12,7 +12,6 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2 } from "lucide-react";
 import useDockingCyclus from "@/hooks/useDockingCyclus";
 import { EditDockingCyclusDialog } from "./edit-dockingcyclus-dialog";

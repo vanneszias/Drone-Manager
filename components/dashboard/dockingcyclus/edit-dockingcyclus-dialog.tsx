@@ -67,7 +67,9 @@ export function EditDockingCyclusDialog({
           setCycli(cycliData);
         } catch (error) {
           console.error("Failed to load data:", error);
-          setError(error instanceof Error ? error.message : "Failed to load data");
+          setError(
+            error instanceof Error ? error.message : "Failed to load data"
+          );
         }
       };
       loadData();
@@ -75,9 +77,9 @@ export function EditDockingCyclusDialog({
   }, [isOpen]);
 
   const handleSelectChange = (value: string, field: keyof DockingCyclus) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: parseInt(value)
+      [field]: parseInt(value),
     }));
   };
 
@@ -113,9 +115,11 @@ export function EditDockingCyclusDialog({
                 Drone
               </Label>
               <div className="col-span-3">
-                <Select 
+                <Select
                   value={formData.DroneId ? formData.DroneId.toString() : ""}
-                  onValueChange={(value) => handleSelectChange(value, "DroneId")}
+                  onValueChange={(value) =>
+                    handleSelectChange(value, "DroneId")
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select Drone" />
@@ -137,16 +141,25 @@ export function EditDockingCyclusDialog({
               </Label>
               <div className="col-span-3">
                 <Select
-                  value={formData.DockingId ? formData.DockingId.toString() : ""}
-                  onValueChange={(value) => handleSelectChange(value, "DockingId")}
+                  value={
+                    formData.DockingId ? formData.DockingId.toString() : ""
+                  }
+                  onValueChange={(value) =>
+                    handleSelectChange(value, "DockingId")
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select Docking" />
                   </SelectTrigger>
                   <SelectContent>
                     {dockings.map((docking) => (
-                      <SelectItem key={docking.Id} value={docking.Id.toString()}>
-                        {`${docking.locatie} (${docking.isbeschikbaar ? "Available" : "Not Available"})`}
+                      <SelectItem
+                        key={docking.Id}
+                        value={docking.Id.toString()}
+                      >
+                        {`${docking.locatie} (${
+                          docking.isbeschikbaar ? "Available" : "Not Available"
+                        })`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -161,7 +174,9 @@ export function EditDockingCyclusDialog({
               <div className="col-span-3">
                 <Select
                   value={formData.CyclusId ? formData.CyclusId.toString() : ""}
-                  onValueChange={(value) => handleSelectChange(value, "CyclusId")}
+                  onValueChange={(value) =>
+                    handleSelectChange(value, "CyclusId")
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select Cyclus" />
@@ -179,7 +194,11 @@ export function EditDockingCyclusDialog({
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>

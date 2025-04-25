@@ -1,4 +1,4 @@
-import { Zone, Evenement } from "@/app/types";
+import { Zone, Event } from "@/app/types";
 
 const apiUrl = "https://drone.ziasvannes.tech/api/zones";
 const eventsApiUrl = "https://drone.ziasvannes.tech/api/events";
@@ -174,7 +174,7 @@ const handleUpdateZone = async (
   }
 };
 
-const fetchEvents = async (): Promise<Evenement[]> => {
+const fetchEvents = async (): Promise<Event[]> => {
   console.log(`Fetching events from: ${eventsApiUrl}`);
   try {
     const res = await fetch(eventsApiUrl, {
@@ -198,7 +198,7 @@ const fetchEvents = async (): Promise<Evenement[]> => {
     }
 
     const data = await res.json();
-    return data as Evenement[];
+    return data as Event[];
   } catch (error) {
     console.error(`Error in fetchEvents:`, error);
     throw error;

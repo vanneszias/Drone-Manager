@@ -22,14 +22,14 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await fetch('/api/events');
+        const response = await fetch("/api/events");
         if (!response.ok) {
-          throw new Error('Failed to fetch events');
+          throw new Error("Failed to fetch events");
         }
         const data = await response.json();
         setEvents(data);
       } catch (error) {
-        console.error('Error fetching events:', error);
+        console.error("Error fetching events:", error);
       } finally {
         setIsLoading(false);
       }
@@ -39,19 +39,21 @@ const Home: React.FC = () => {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Weet je zeker dat je dit evenement wilt verwijderen?')) {
+    if (
+      window.confirm("Weet je zeker dat je dit evenement wilt verwijderen?")
+    ) {
       try {
         const response = await fetch(`/api/events/${id}`, {
-          method: 'DELETE',
+          method: "DELETE",
         });
 
         if (!response.ok) {
-          throw new Error('Failed to delete event');
+          throw new Error("Failed to delete event");
         }
 
-        setEvents(events.filter(event => event.id !== id));
+        setEvents(events.filter((event) => event.id !== id));
       } catch (error) {
-        console.error('Error deleting event:', error);
+        console.error("Error deleting event:", error);
       }
     }
   };
@@ -72,17 +74,17 @@ const Home: React.FC = () => {
               Bekijk en zoek door onze upcoming events
             </p>
           </div>
-          
+
           <div className="w-full max-w-sm space-y-2">
             <div className="relative flex gap-4">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="gap-2"
                 onClick={() => router.push("/evenementtoevoegen")}
               >
                 Nieuw Event
               </Button>
-              
+
               <input
                 type="text"
                 placeholder="Zoek evenementen..."
@@ -97,26 +99,31 @@ const Home: React.FC = () => {
             {isLoading ? (
               <div className="col-span-full text-center">Loading events...</div>
             ) : filteredEvents.length === 0 ? (
-              <div className="col-span-full text-center">Geen evenementen gevonden</div>
+              <div className="col-span-full text-center">
+                Geen evenementen gevonden
+              </div>
             ) : (
               filteredEvents.map((event) => (
-                <div key={event.id} className="rounded-lg border bg-card text-card-foreground shadow-sm">
+                <div
+                  key={event.id}
+                  className="rounded-lg border bg-card text-card-foreground shadow-sm"
+                >
                   <div className="flex flex-col space-y-1.5 p-6">
                     <div className="flex justify-between items-start">
                       <h3 className="text-2xl font-semibold">{event.name}</h3>
-                      <button 
+                      <button
                         onClick={() => handleDelete(event.id)}
                         className="text-red-500 hover:text-red-700 p-1"
                       >
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          width="20" 
-                          height="20" 
-                          viewBox="0 0 24 24" 
-                          fill="none" 
-                          stroke="currentColor" 
-                          strokeWidth="2" 
-                          strokeLinecap="round" 
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
                           strokeLinejoin="round"
                         >
                           <path d="M3 6h18"></path>
@@ -127,17 +134,17 @@ const Home: React.FC = () => {
                     </div>
                     <div className="space-y-1 text-sm text-muted-foreground">
                       <p className="flex items-center gap-2">
-                        <span className="font-semibold">Start:</span> 
+                        <span className="font-semibold">Start:</span>
                         {event.startDate} om {event.startTime}
                       </p>
                       <p className="flex items-center gap-2">
-                        <span className="font-semibold">Eind:</span> 
+                        <span className="font-semibold">Eind:</span>
                         {event.endDate} om {event.endTime}
                       </p>
                     </div>
                   </div>
                   <div className="p-6 pt-0">
-                    <button 
+                    <button
                       onClick={() => router.push(`/event/${event.id}`)}
                       className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
                     >

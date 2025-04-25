@@ -11,41 +11,39 @@ import { Button } from "../ui/button";
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between mx-auto md:px-6">
+    <header className="sticky top-0 z-40 w-full glass-effect border-b border-white/10">
+      <div className="container mx-auto px-4 md:px-6 max-w-7xl flex h-16 items-center justify-between">
         <div className="flex items-center space-x-2">
-          <Link href="/" className="flex items-center space-x-2">
-            <Rocket className="h-6 w-6" />
-            <span className="text-xl font-bold">DroneMaster</span>
+          <Link
+            href="/"
+            className="flex items-center space-x-3 transition-all duration-300 hover:scale-105"
+          >
+            <span className="theme-gradient-1 p-2 rounded-lg shadow-soft">
+              <Rocket className="h-5 w-5 text-white" />
+            </span>
+            <span className="text-xl font-bold bg-clip-text text-transparent theme-gradient-2">
+              DroneMaster
+            </span>
           </Link>
         </div>
-        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-          <Link
-            href="#features"
-            className="transition-colors hover:text-foreground/80"
-          >
+        <nav className="hidden md:flex items-center space-x-8 text-sm font-medium">
+          <Link href="#features" className="nav-link">
             Features
           </Link>
-          <Link
-            href="#testimonials"
-            className="transition-colors hover:text-foreground/80"
-          >
+          <Link href="#testimonials" className="nav-link">
             Testimonials
           </Link>
-          <Link
-            href="#faq"
-            className="transition-colors hover:text-foreground/80"
-          >
+          <Link href="#faq" className="nav-link">
             FAQ
           </Link>
         </nav>
         <div className="flex items-center space-x-4">
           <SignedOut>
             <SignInButton>
-              <Button variant="outline">Log In</Button>
+              <Button className="button-secondary">Log In</Button>
             </SignInButton>
             <SignUpButton>
-              <Button>Sign Up</Button>
+              <Button className="button-primary">Sign Up</Button>
             </SignUpButton>
           </SignedOut>
           <SignedIn>
