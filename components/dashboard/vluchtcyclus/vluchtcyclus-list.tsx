@@ -13,9 +13,17 @@ import {
   TableCaption,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Edit,
+  Trash2,
+  Play,
+  CheckCircle,
+  XCircle,
+  FileText,
+} from "lucide-react";
 import useVluchtCyclus from "@/hooks/useVluchtCyclus";
-import { EditVluchtCyclusDialog } from "./edit-vluchtcyclus-dialog";
+import { AttachVerslagDialog } from "./attach-verslag-dialog";
 
 interface VluchtCyclusListProps {
   vluchtCycli: VluchtCyclus[];
@@ -24,11 +32,19 @@ interface VluchtCyclusListProps {
 export default function VluchtCyclusList({
   vluchtCycli,
 }: VluchtCyclusListProps) {
-  const { handleDelete, getDrones, getZones, getPlaces, getVerslagen } =
-    useVluchtCyclus;
-  const [isEditOpen, setIsEditOpen] = useState(false);
+  const {
+    handleDelete,
+    handleUpdateStatus,
+    getDrones,
+    getZones,
+    getPlaces,
+    getVerslagen,
+  } = useVluchtCyclus;
+
   const [selectedVluchtCyclus, setSelectedVluchtCyclus] =
     useState<VluchtCyclus | null>(null);
+  const [isAttachVerslagOpen, setIsAttachVerslagOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [drones, setDrones] = useState<Drone[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [places, setPlaces] = useState<Startplaats[]>([]);
@@ -50,15 +66,16 @@ export default function VluchtCyclusList({
         setVerslagen(verslagenData);
       } catch (error) {
         console.error("Error loading related data:", error);
+        setError("Failed to load data");
       }
     };
 
     loadRelatedData();
   }, []);
 
-  const handleEdit = (vluchtCyclus: VluchtCyclus) => {
+  const handleAttachVerslag = (vluchtCyclus: VluchtCyclus) => {
     setSelectedVluchtCyclus(vluchtCyclus);
-    setIsEditOpen(true);
+    setIsAttachVerslagOpen(true);
   };
 
   const getDroneDetails = (droneId: number | null | undefined) => {
@@ -82,6 +99,27 @@ export default function VluchtCyclusList({
     return `${plaats.locatie} ${
       plaats.isbeschikbaar ? "(Beschikbaar)" : "(Bezet)"
     }`;
+  };
+
+  const getStatusBadge = (status: string) => {
+    const styles = {
+      PENDING: "bg-yellow-500 text-white",
+      IN_PROGRESS: "bg-blue-500 text-white",
+      COMPLETED: "bg-green-500 text-white",
+      CANCELLED: "bg-red-500 text-white",
+    };
+    return (
+      <Badge className={styles[status as keyof typeof styles]}>{status}</Badge>
+    );
+  };
+
+  const getTimeDisplay = (time: string | null | undefined) => {
+    if (!time) return "-";
+    const date = new Date(time);
+    return date.toLocaleString("nl-BE", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
   };
 
   const getVerslagDetails = (verslagId: number | null | undefined) => {
@@ -109,10 +147,13 @@ export default function VluchtCyclusList({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">ID</TableHead>
+            <TableHead>ID</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead>Drone</TableHead>
             <TableHead>Zone</TableHead>
             <TableHead>Startplaats</TableHead>
+            <TableHead>Start</TableHead>
+            <TableHead>Eind</TableHead>
             <TableHead>Verslag</TableHead>
             <TableHead className="text-right">Acties</TableHead>
           </TableRow>
@@ -120,27 +161,85 @@ export default function VluchtCyclusList({
         <TableBody>
           {vluchtCycli.map((vluchtCyclus) => (
             <TableRow key={vluchtCyclus.Id}>
-              <TableCell className="font-medium">{vluchtCyclus.Id}</TableCell>
+              <TableCell>{vluchtCyclus.Id}</TableCell>
+              <TableCell>{getStatusBadge(vluchtCyclus.status)}</TableCell>
               <TableCell>{getDroneDetails(vluchtCyclus.DroneId)}</TableCell>
               <TableCell>{getZoneDetails(vluchtCyclus.ZoneId)}</TableCell>
               <TableCell>
                 {getStartplaatsDetails(vluchtCyclus.PlaatsId)}
               </TableCell>
+              <TableCell>{getTimeDisplay(vluchtCyclus.startTijd)}</TableCell>
+              <TableCell>{getTimeDisplay(vluchtCyclus.eindTijd)}</TableCell>
               <TableCell>{getVerslagDetails(vluchtCyclus.VerslagId)}</TableCell>
               <TableCell className="text-right">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="mr-2"
-                  onClick={() => handleEdit(vluchtCyclus)}
-                >
-                  <Edit className="h-4 w-4" />
-                  <span className="sr-only">Bewerk vlucht cyclus</span>
-                </Button>
+                {vluchtCyclus.status === "PENDING" && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="mr-2"
+                    onClick={() =>
+                      handleUpdateStatus(
+                        vluchtCyclus.Id,
+                        "IN_PROGRESS",
+                        setError
+                      )
+                    }
+                  >
+                    <Play className="h-4 w-4 text-blue-500" />
+                    <span className="sr-only">Start vlucht</span>
+                  </Button>
+                )}
+                {vluchtCyclus.status === "IN_PROGRESS" && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="mr-2"
+                      onClick={() =>
+                        handleUpdateStatus(
+                          vluchtCyclus.Id,
+                          "COMPLETED",
+                          setError
+                        )
+                      }
+                    >
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="sr-only">Voltooi vlucht</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="mr-2"
+                      onClick={() =>
+                        handleUpdateStatus(
+                          vluchtCyclus.Id,
+                          "CANCELLED",
+                          setError
+                        )
+                      }
+                    >
+                      <XCircle className="h-4 w-4 text-red-500" />
+                      <span className="sr-only">Annuleer vlucht</span>
+                    </Button>
+                  </>
+                )}
+                {vluchtCyclus.status === "COMPLETED" &&
+                  !vluchtCyclus.VerslagId && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="mr-2"
+                      onClick={() => handleAttachVerslag(vluchtCyclus)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span className="sr-only">Voeg verslag toe</span>
+                    </Button>
+                  )}
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => handleDelete(vluchtCyclus.Id)}
+                  disabled={vluchtCyclus.status === "IN_PROGRESS"}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                   <span className="sr-only">Verwijder vlucht cyclus</span>
@@ -151,16 +250,21 @@ export default function VluchtCyclusList({
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={5}>Totaal Vlucht Cycli</TableCell>
+            <TableCell colSpan={8}>Totaal Vlucht Cycli</TableCell>
             <TableCell className="text-right">{vluchtCycli.length}</TableCell>
           </TableRow>
         </TableFooter>
       </Table>
+
+      {error && (
+        <div className="mt-4 p-4 bg-red-100 text-red-800 rounded">{error}</div>
+      )}
+
       {selectedVluchtCyclus && (
-        <EditVluchtCyclusDialog
+        <AttachVerslagDialog
           vluchtCyclus={selectedVluchtCyclus}
-          isOpen={isEditOpen}
-          setIsOpen={setIsEditOpen}
+          isOpen={isAttachVerslagOpen}
+          setIsOpen={setIsAttachVerslagOpen}
         />
       )}
     </>

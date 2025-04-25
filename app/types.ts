@@ -15,16 +15,15 @@ export interface ApiResponse<T> {
 export interface Drone {
   Id: number;
   status: "AVAILABLE" | "IN_USE" | "MAINTENANCE" | "OFFLINE";
-  batterij: number; // Battery level
-  magOpstijgen: boolean; // Allowed to take off
+  batterij: number;
+  magOpstijgen: boolean;
 }
 
-// Add other types as needed (Event, Zone, etc.)
 export interface Evenement {
   Id: number;
-  StartDatum: string; // Dates are strings in JSON
+  StartDatum: string;
   EindDatum: string;
-  StartTijd: string; // Times are strings in JSON
+  StartTijd: string;
   Tijdsduur: string;
   Naam: string;
 }
@@ -50,7 +49,6 @@ export interface DockingCyclus {
   droneId: number;
 }
 
-// Define and export the Docking type
 export interface Docking {
   Id: number;
   locatie: string;
@@ -77,16 +75,19 @@ export interface Verslag {
 
 export interface VluchtCyclus {
   Id: number;
-  VerslagId?: number | null | undefined;
-  PlaatsId?: number | null | undefined;
-  DroneId?: number | null | undefined;
-  ZoneId?: number | null | undefined;
+  DroneId: number; // Required: must have a drone
+  PlaatsId: number; // Required: must have a starting location
+  ZoneId?: number | null; // Optional: not all flights need zones
+  VerslagId?: number | null; // Optional: report is added after flight
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED"; // New: track flight status
+  startTijd?: string | null; // New: track when flight started
+  eindTijd?: string | null; // New: track when flight ended
 }
 
 export interface Cyclus {
   Id: number;
-  startuur: string; // time string 'HH:MM:SS'
-  tijdstip: string; // time string 'HH:MM:SS'
+  startuur: string;
+  tijdstip: string;
   VluchtCyclusId?: number | null;
 }
 
