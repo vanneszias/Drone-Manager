@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,123 +20,114 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { PlusCircle } from "lucide-react";
-import { Drone, Startplaats, Zone } from "@/app/types";
-import useVluchtCyclus from "@/hooks/useVluchtCyclus";
 
-type Step = "DRONE" | "LOCATION" | "ZONE";
+import useVluchtCyclus from "@/hooks/useVluchtCyclus";
+import { VluchtCyclus, Startplaats, Drone, Zone, Verslag } from "@/app/types";
 
 export function AddVluchtCyclusDialog() {
-  const { handleCreateVluchtCyclus, getDrones, getPlaces, getZones } =
-    useVluchtCyclus;
-
+  const {
+    handleAddVluchtCyclus,
+    getPlaces,
+    getDrones,
+    getZones,
+    getVerslagen,
+  } = useVluchtCyclus;
   const [isOpen, setIsOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState<Step>("DRONE");
-  const [formData, setFormData] = useState({
-    droneId: "",
-    plaatsId: "",
-    zoneId: "",
-  });
+  const [formData, setFormData] = useState<VluchtCyclus>({
+    VerslagId: null,
+    PlaatsId: null,
+    DroneId: null,
+    ZoneId: null,
+  } as VluchtCyclus);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [drones, setDrones] = useState<Drone[]>([]);
   const [places, setPlaces] = useState<Startplaats[]>([]);
+  const [drones, setDrones] = useState<Drone[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
+  const [verslagen, setVerslagen] = useState<Verslag[]>([]);
 
   useEffect(() => {
-    const loadData = async () => {
-      if (!isOpen) return;
-
+    const fetchData = async () => {
       try {
-        if (currentStep === "DRONE") {
-          const dronesData = await getDrones();
-          // Filter only available drones that can take off
-          setDrones(
-            dronesData.filter(
-              (d: Drone) => d.status === "AVAILABLE" && d.magOpstijgen
-            )
-          );
-        } else if (currentStep === "LOCATION") {
-          const placesData = await getPlaces();
-          // Filter only available locations
-          setPlaces(placesData.filter((p: Startplaats) => p.isbeschikbaar));
-        } else if (currentStep === "ZONE") {
-          const zonesData = await getZones();
-          setZones(zonesData);
-        }
+        const [placesData, dronesData, zonesData, verslagenData] =
+          await Promise.all([
+            getPlaces(),
+            getDrones(),
+            getZones(),
+            getVerslagen(),
+          ]);
+        setPlaces(placesData);
+        setDrones(dronesData);
+        setZones(zonesData);
+        setVerslagen(verslagenData);
       } catch (error) {
-        console.error("Error loading data:", error);
+        console.error("Error fetching data:", error);
         setError("Failed to load options");
       }
     };
 
-    loadData();
-  }, [currentStep, isOpen]);
+    if (isOpen) {
+      fetchData();
+    }
+  }, [isOpen]);
 
-  const resetForm = () => {
-    setFormData({
-      droneId: "",
-      plaatsId: "",
-      zoneId: "",
-    });
-    setCurrentStep("DRONE");
-    setError(null);
-  };
-
-  const handleSelectChange = (value: string, field: keyof typeof formData) => {
+  const handleSelectChange = (value: string, field: keyof VluchtCyclus) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: value,
+      [field]: value === "" ? null : parseInt(value),
     }));
   };
 
-  const handleNext = () => {
-    if (currentStep === "DRONE") {
-      setCurrentStep("LOCATION");
-    } else if (currentStep === "LOCATION") {
-      setCurrentStep("ZONE");
-    }
-  };
+  const resetForm = () => {
+    setFormData({
+      VerslagId: null,
+      PlaatsId: null,
+      DroneId: null,
+      ZoneId: null,
+    } as VluchtCyclus);
 
-  const handleBack = () => {
-    if (currentStep === "LOCATION") {
-      setCurrentStep("DRONE");
-    } else if (currentStep === "ZONE") {
-      setCurrentStep("LOCATION");
-    }
+    setError(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const droneId = parseInt(formData.droneId);
-    const plaatsId = parseInt(formData.plaatsId);
-    const zoneId = formData.zoneId ? parseInt(formData.zoneId) : null;
+    try {
+      // Validate and ensure all values are proper numbers or null
+      const apiData = {
+        VerslagId: formData.VerslagId || null,
+        PlaatsId: formData.PlaatsId || null,
+        DroneId: formData.DroneId || null,
+        ZoneId: formData.ZoneId || null,
+      };
 
-    if (!droneId || !plaatsId) {
-      setError("Drone and location are required");
-      return;
-    }
+      // Check if at least one required field is filled
+      if (!apiData.PlaatsId && !apiData.DroneId && !apiData.ZoneId) {
+        setError("Please select at least one option (Place, Drone, or Zone)");
+        return;
+      }
 
-    handleCreateVluchtCyclus(
-      droneId,
-      plaatsId,
-      zoneId,
-      setIsLoading,
-      setError,
-      setIsOpen,
-      resetForm
-    );
-  };
+      // Check if the selected drone is available
+      if (apiData.DroneId) {
+        const selectedDrone = drones.find((d) => d.Id === apiData.DroneId);
+        if (selectedDrone?.status !== "AVAILABLE") {
+          setError("Selected drone is not available");
+          return;
+        }
+      }
 
-  const getStepTitle = () => {
-    switch (currentStep) {
-      case "DRONE":
-        return "Selecteer een Drone";
-      case "LOCATION":
-        return "Selecteer een Startlocatie";
-      case "ZONE":
-        return "Selecteer een Zone (Optioneel)";
+      handleAddVluchtCyclus(
+        apiData as VluchtCyclus,
+        setIsLoading,
+        setError,
+        setIsOpen,
+        resetForm
+      );
+    } catch (error) {
+      console.error("Error preparing form data:", error);
+      setError("Invalid form data. Please check your selections.");
     }
   };
 
@@ -149,89 +140,96 @@ export function AddVluchtCyclusDialog() {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{getStepTitle()}</DialogTitle>
+          <DialogTitle>Nieuwe Vluchtcyclus Toevoegen</DialogTitle>
           <DialogDescription>
-            {currentStep === "DRONE" &&
-              "Kies een beschikbare drone om te vliegen."}
-            {currentStep === "LOCATION" && "Kies een beschikbare startlocatie."}
-            {currentStep === "ZONE" &&
-              "Optioneel: kies een zone voor deze vlucht."}
+            Vul de details in voor de nieuwe vluchtcyclus. Minstens één optie is
+            vereist.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            {currentStep === "DRONE" && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="drone_select" className="text-right">
-                  Drone
-                </Label>
-                <Select
-                  value={formData.droneId}
-                  onValueChange={(value) =>
-                    handleSelectChange(value, "droneId")
-                  }
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecteer een drone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {drones.map((drone) => (
-                      <SelectItem key={drone.Id} value={drone.Id.toString()}>
-                        {`Drone ${drone.Id} (${drone.batterij}% batterij)`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {currentStep === "LOCATION" && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="plaats_select" className="text-right">
-                  Startplaats
-                </Label>
-                <Select
-                  value={formData.plaatsId}
-                  onValueChange={(value) =>
-                    handleSelectChange(value, "plaatsId")
-                  }
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecteer een startplaats" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {places.map((place) => (
-                      <SelectItem key={place.Id} value={place.Id.toString()}>
-                        {place.locatie}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {currentStep === "ZONE" && (
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="zone_select" className="text-right">
-                  Zone
-                </Label>
-                <Select
-                  value={formData.zoneId}
-                  onValueChange={(value) => handleSelectChange(value, "zoneId")}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecteer een zone (optioneel)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {zones.map((zone) => (
-                      <SelectItem key={zone.Id} value={zone.Id.toString()}>
-                        {`${zone.naam} (${zone.breedte}x${zone.lengte}m)`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="verslag_select" className="text-right">
+                Verslag
+              </Label>
+              <Select
+                value={formData.VerslagId?.toString() || ""}
+                onValueChange={(value) =>
+                  handleSelectChange(value, "VerslagId")
+                }
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een verslag" />
+                </SelectTrigger>
+                <SelectContent>
+                  {verslagen.map((verslag) => (
+                    <SelectItem key={verslag.Id} value={verslag.Id.toString()}>
+                      {verslag.onderwerp}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="plaats_select" className="text-right">
+                Plaats
+              </Label>
+              <Select
+                value={formData.PlaatsId?.toString() || ""}
+                onValueChange={(value) => handleSelectChange(value, "PlaatsId")}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een plaats" />
+                </SelectTrigger>
+                <SelectContent>
+                  {places.map((place) => (
+                    <SelectItem key={place.Id} value={place.Id.toString()}>
+                      {place.locatie}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="drone_select" className="text-right">
+                Drone
+              </Label>
+              <Select
+                value={formData.DroneId?.toString() || ""}
+                onValueChange={(value) => handleSelectChange(value, "DroneId")}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een drone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {drones.map((drone) => (
+                    <SelectItem key={drone.Id} value={drone.Id.toString()}>
+                      {`Drone ${drone.Id} - ${drone.status}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="zone_select" className="text-right">
+                Zone
+              </Label>
+              <Select
+                value={formData.ZoneId?.toString() || ""}
+                onValueChange={(value) => handleSelectChange(value, "ZoneId")}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecteer een zone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {zones.map((zone) => (
+                    <SelectItem key={zone.Id} value={zone.Id.toString()}>
+                      {zone.naam}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
           <DialogFooter>
@@ -242,32 +240,9 @@ export function AddVluchtCyclusDialog() {
             >
               Annuleren
             </Button>
-            {currentStep !== "DRONE" && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBack}
-                className="mr-2"
-              >
-                Terug
-              </Button>
-            )}
-            {currentStep === "ZONE" ? (
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Opslaan..." : "Vluchtcyclus Opslaan"}
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                onClick={handleNext}
-                disabled={
-                  (currentStep === "DRONE" && !formData.droneId) ||
-                  (currentStep === "LOCATION" && !formData.plaatsId)
-                }
-              >
-                Volgende
-              </Button>
-            )}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Opslaan..." : "Vluchtcyclus Opslaan"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
