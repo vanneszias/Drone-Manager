@@ -85,6 +85,10 @@ export default function Features() {
               <Button
                 variant="ghost"
                 className="gap-1 p-0 hover:bg-transparent hover:underline hover:scale-105 transition-all duration-300 text-blue-400"
+                onClick={() =>
+                  (window.location.href =
+                    "https://shattereddisk.github.io/rickroll/rickroll.mp4")
+                }
               >
                 Learn more <ChevronRight className="h-4 w-4" />
               </Button>
@@ -107,6 +111,10 @@ export default function Features() {
               <Button
                 variant="ghost"
                 className="gap-1 p-0 hover:bg-transparent hover:underline hover:scale-105 transition-all duration-300 text-sky-300"
+                onClick={() =>
+                  (window.location.href =
+                    "https://shattereddisk.github.io/rickroll/rickroll.mp4")
+                }
               >
                 Learn more <ChevronRight className="h-4 w-4" />
               </Button>
@@ -128,6 +136,10 @@ export default function Features() {
               <Button
                 variant="ghost"
                 className="gap-1 p-0 hover:bg-transparent hover:underline hover:scale-105 transition-all duration-300 text-green-400"
+                onClick={() =>
+                  (window.location.href =
+                    "https://shattereddisk.github.io/rickroll/rickroll.mp4")
+                }
               >
                 Learn more <ChevronRight className="h-4 w-4" />
               </Button>
@@ -163,6 +175,10 @@ export default function Features() {
               <Button
                 variant="ghost"
                 className="gap-1 p-0 hover:bg-transparent hover:underline hover:scale-105 transition-all duration-300 text-blue-400"
+                onClick={() =>
+                  (window.location.href =
+                    "https://shattereddisk.github.io/rickroll/rickroll.mp4")
+                }
               >
                 Learn more <ChevronRight className="h-4 w-4" />
               </Button>
@@ -199,6 +215,10 @@ export default function Features() {
               <Button
                 variant="ghost"
                 className="gap-1 p-0 hover:bg-transparent hover:underline hover:scale-105 transition-all duration-300 text-sky-300"
+                onClick={() =>
+                  (window.location.href =
+                    "https://shattereddisk.github.io/rickroll/rickroll.mp4")
+                }
               >
                 Learn more <ChevronRight className="h-4 w-4" />
               </Button>
