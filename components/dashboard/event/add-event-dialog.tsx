@@ -15,70 +15,94 @@ import { Label } from "@/components/ui/label";
 import { PlusCircle } from "lucide-react";
 import useEvents from "@/hooks/useEvents"; // Hook for API calls
 
-interface EventFormData {
-  naam: string;
-  start_datum: string; // YYYY-MM-DD
-  eind_datum: string; // YYYY-MM-DD
-  start_tijd: string; // HH:MM[:SS]
-  tijdsduur: string; // HH:MM[:SS]
-}
-
-// Define the type for the data *sent* to the API (matches backend expectation)
-// This is effectively the same as EventFormData in this case.
-type EventApiInput = EventFormData;
+import { Event } from "@/app/types";
 
 export function AddEventDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize state with the correct snake_case structure
-  const [formData, setFormData] = useState<EventFormData>({
-    naam: "",
-    start_datum: "",
-    eind_datum: "",
-    start_tijd: "", // Initialize time strings, ensure format is handled on submit
-    tijdsduur: "", // Initialize time strings, ensure format is handled on submit
+  const [formData, setFormData] = useState<Event>({
+    Id: 0,
+    Naam: "",
+    StartDatum: "",
+    EindDatum: "",
+    StartTijd: "",
+    Tijdsduur: "",
   });
+
+  // Function to ensure time string is in HH:mm:ss format
+  const formatTimeString = (time: string): string => {
+    if (!time) return "";
+    // If time is just HH:mm, append :00 for seconds
+    if (time.length === 5) {
+      return `${time}:00`;
+    }
+    return time;
+  };
+
+  // Function to validate dates
+  const validateDates = (): string | null => {
+    const startDate = new Date(formData.StartDatum);
+    const endDate = new Date(formData.EindDatum);
+
+    if (endDate < startDate) {
+      return "End date cannot be before start date";
+    }
+    return null;
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [id]: value, // Value from date/time inputs is already string
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null); // Clear previous errors
-    console.log("Form Data before submit:", formData);
-
-    // The formData already matches the snake_case structure the API expects (EventApiInput)
-    // No casting needed here, just pass the formData directly.
-    const eventApiInputData = {
-      Id: 0, // temporary ID that will be set by the backend
-      Naam: formData.naam,
-      StartDatum: formData.start_datum,
-      EindDatum: formData.eind_datum,
-      StartTijd: formData.start_tijd,
-      Tijdsduur: formData.tijdsduur,
+    // Convert from HTML input IDs to PascalCase for state
+    const fieldMapping: { [key: string]: keyof Event } = {
+      naam: "Naam",
+      start_datum: "StartDatum",
+      eind_datum: "EindDatum",
+      start_tijd: "StartTijd",
+      tijdsduur: "Tijdsduur",
     };
 
-    // Pass the correctly structured PascalCase data to the hook
+    const stateKey = fieldMapping[id];
+    if (stateKey) {
+      setFormData((prev) => ({
+        ...prev,
+        [stateKey]: value,
+      }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    // Validate dates
+    const dateError = validateDates();
+    if (dateError) {
+      setError(dateError);
+      return;
+    }
+
+    // Format times to ensure HH:mm:ss format
+    const eventData: Event = {
+      ...formData,
+      StartTijd: formatTimeString(formData.StartTijd),
+      Tijdsduur: formatTimeString(formData.Tijdsduur),
+    };
+
     useEvents.handleAddEvent(
-      eventApiInputData,
+      eventData,
       setIsSubmitting,
       setError,
       setIsOpen,
-      // Map the resetData to match EventFormData structure
-      (resetData) =>
+      () =>
         setFormData({
-          naam: "",
-          start_datum: "",
-          eind_datum: "",
-          start_tijd: "",
-          tijdsduur: "",
+          Id: 0,
+          Naam: "",
+          StartDatum: "",
+          EindDatum: "",
+          StartTijd: "",
+          Tijdsduur: "",
         })
     );
   };
@@ -108,7 +132,7 @@ export function AddEventDialog() {
               </Label>
               <Input
                 id="naam"
-                value={formData.naam}
+                value={formData.Naam}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
@@ -123,7 +147,7 @@ export function AddEventDialog() {
               <Input
                 id="start_datum"
                 type="date"
-                value={formData.start_datum}
+                value={formData.StartDatum}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
@@ -138,7 +162,8 @@ export function AddEventDialog() {
               <Input
                 id="start_tijd"
                 type="time"
-                value={formData.start_tijd}
+                step="1"
+                value={formData.StartTijd}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
@@ -153,7 +178,7 @@ export function AddEventDialog() {
               <Input
                 id="eind_datum"
                 type="date"
-                value={formData.eind_datum}
+                value={formData.EindDatum}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
@@ -168,7 +193,8 @@ export function AddEventDialog() {
               <Input
                 id="tijdsduur"
                 type="time"
-                value={formData.tijdsduur}
+                step="1"
+                value={formData.Tijdsduur}
                 onChange={handleInputChange}
                 className="col-span-3"
                 required
